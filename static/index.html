@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>VelocityAI — SOP Compliance Checker</title>
+<title>VelocityAI — SOP Compliance Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root {
     --bg: #0f1117;
@@ -34,454 +35,458 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 18px 32px;
+    padding: 14px 28px;
     border-bottom: 1px solid var(--border);
     background: var(--surface);
   }
   header .logo {
-    width: 36px; height: 36px;
+    width: 34px; height: 34px;
     background: linear-gradient(135deg, var(--accent), var(--accent2));
     border-radius: 8px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
+    font-size: 17px;
   }
-  header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
-  header span { color: var(--muted); font-size: 13px; margin-left: auto; }
+  header h1 { font-size: 19px; font-weight: 700; letter-spacing: -0.3px; }
+  header .subtitle { color: var(--muted); font-size: 12px; }
+  header nav {
+    margin-left: auto;
+    display: flex; gap: 4px;
+  }
+  .nav-btn {
+    padding: 7px 16px;
+    font-size: 13px; font-weight: 600;
+    color: var(--muted);
+    border: none; background: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .nav-btn:hover { color: var(--text); background: var(--surface2); }
+  .nav-btn.active { color: var(--accent2); background: rgba(108,99,255,0.12); }
+
+  /* ── Pages ── */
+  .page { display: none; height: calc(100vh - 65px); overflow: hidden; }
+  .page.active { display: flex; }
 
   /* ── Layout ── */
   .layout {
     display: grid;
-    grid-template-columns: 420px 1fr;
-    grid-template-rows: 1fr;
-    height: calc(100vh - 73px);
+    grid-template-columns: 400px 1fr;
+    width: 100%; height: 100%;
   }
 
   /* ── Left Panel ── */
   .left-panel {
     border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
+    display: flex; flex-direction: column;
     overflow: hidden;
   }
 
   .panel-header {
-    padding: 20px 24px 16px;
+    padding: 16px 20px 12px;
     border-bottom: 1px solid var(--border);
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 12px; font-weight: 600;
     color: var(--muted);
     text-transform: uppercase;
     letter-spacing: 0.6px;
   }
 
-  .form-area {
-    padding: 20px 24px;
-    flex: 1;
-    overflow-y: auto;
-  }
-
-  .form-row { margin-bottom: 16px; }
+  .form-area { padding: 16px 20px; flex: 1; overflow-y: auto; }
+  .form-row { margin-bottom: 14px; }
   label {
-    display: block;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 6px;
+    display: block; font-size: 11px; font-weight: 600;
+    color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 5px;
   }
   input, textarea, select {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text);
-    font-size: 14px;
-    padding: 10px 13px;
-    outline: none;
-    resize: none;
-    font-family: inherit;
-    transition: border-color 0.15s;
+    width: 100%; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-size: 13px;
+    padding: 9px 12px; outline: none; resize: none;
+    font-family: inherit; transition: border-color 0.15s;
   }
   input:focus, textarea:focus { border-color: var(--accent); }
-  textarea { min-height: 160px; line-height: 1.5; }
+  textarea { min-height: 130px; line-height: 1.5; }
 
   /* ── Input mode tabs ── */
   .input-tabs {
-    display: flex;
-    gap: 0;
-    margin-bottom: 12px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    display: flex; gap: 0; margin-bottom: 12px;
+    border: 1px solid var(--border); border-radius: 8px;
     overflow: hidden;
   }
   .input-tab {
-    flex: 1;
-    padding: 8px 12px;
-    font-size: 12px;
-    font-weight: 600;
-    text-align: center;
-    cursor: pointer;
-    color: var(--muted);
-    background: var(--surface2);
+    flex: 1; padding: 8px 12px;
+    font-size: 12px; font-weight: 600;
+    text-align: center; cursor: pointer;
+    color: var(--muted); background: var(--surface2);
     transition: background 0.15s, color 0.15s;
     border-right: 1px solid var(--border);
   }
   .input-tab:last-child { border-right: none; }
   .input-tab:hover { color: var(--text); }
   .input-tab.active { background: var(--accent); color: #fff; }
-
   .audio-info {
-    font-size: 12px;
-    color: var(--muted);
-    margin-top: 8px;
-    line-height: 1.5;
-    padding: 8px 10px;
-    background: rgba(108,99,255,0.07);
-    border-radius: 6px;
-    border: 1px solid rgba(108,99,255,0.15);
+    font-size: 12px; color: var(--muted);
+    margin-top: 8px; line-height: 1.5;
+    padding: 8px 10px; background: rgba(108,99,255,0.07);
+    border-radius: 6px; border: 1px solid rgba(108,99,255,0.15);
   }
 
-  /* ── Drop zone ── */
   .drop-zone {
-    border: 2px dashed var(--border);
-    border-radius: 8px;
-    padding: 18px 16px;
-    text-align: center;
-    cursor: pointer;
+    border: 2px dashed var(--border); border-radius: 8px;
+    padding: 14px; text-align: center; cursor: pointer;
     transition: border-color 0.15s, background 0.15s;
-    margin-bottom: 10px;
-    position: relative;
+    margin-bottom: 8px; position: relative;
   }
   .drop-zone:hover, .drop-zone.dragover {
-    border-color: var(--accent);
-    background: rgba(108,99,255,0.06);
+    border-color: var(--accent); background: rgba(108,99,255,0.06);
   }
   .drop-zone input[type=file] {
-    position: absolute; inset: 0;
-    opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    position: absolute; inset: 0; opacity: 0;
+    cursor: pointer; width: 100%; height: 100%;
     padding: 0; border: none; background: none;
   }
-  .drop-zone .dz-icon { font-size: 22px; margin-bottom: 4px; }
   .drop-zone .dz-text { font-size: 12px; color: var(--muted); }
   .drop-zone .dz-text b { color: var(--accent2); }
   .drop-zone .dz-filename {
-    margin-top: 6px; font-size: 12px;
-    color: var(--green); font-weight: 600;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-top: 4px; font-size: 12px; color: var(--green);
+    font-weight: 600; white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis;
   }
   .or-divider {
     display: flex; align-items: center; gap: 8px;
-    font-size: 11px; color: var(--muted);
-    margin-bottom: 8px;
+    font-size: 11px; color: var(--muted); margin-bottom: 6px;
   }
   .or-divider::before, .or-divider::after {
     content: ''; flex: 1; height: 1px; background: var(--border);
   }
 
-  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
   .btn-submit {
-    width: 100%;
-    padding: 12px;
-    background: var(--accent);
-    color: #fff;
-    font-size: 14px;
-    font-weight: 600;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.15s, opacity 0.15s;
+    width: 100%; padding: 11px;
+    background: var(--accent); color: #fff;
+    font-size: 13px; font-weight: 600;
+    border: none; border-radius: 8px;
+    cursor: pointer; transition: background 0.15s, opacity 0.15s;
     margin-top: 4px;
   }
   .btn-submit:hover { background: #5a52e0; }
   .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  /* ── Recent Jobs ── */
-  .jobs-section {
-    border-top: 1px solid var(--border);
-  }
-  .jobs-list {
-    overflow-y: auto;
-    max-height: 220px;
-  }
+  /* ── Jobs list ── */
+  .jobs-section { border-top: 1px solid var(--border); }
+  .jobs-list { overflow-y: auto; max-height: 220px; }
   .filter-tabs {
-    display: flex;
-    gap: 6px;
-    padding: 10px 24px 0;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
+    display: flex; gap: 4px; padding: 8px 20px 0;
+    border-bottom: 1px solid var(--border); background: var(--surface);
   }
   .filter-tab {
-    padding: 5px 12px 8px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--muted);
-    cursor: pointer;
+    padding: 4px 10px 7px; font-size: 12px; font-weight: 600;
+    color: var(--muted); cursor: pointer;
     border-bottom: 2px solid transparent;
     transition: color 0.15s, border-color 0.15s;
-    white-space: nowrap;
   }
   .filter-tab:hover { color: var(--text); }
   .filter-tab.active { color: var(--accent2); border-bottom-color: var(--accent2); }
   .filter-tab .tab-badge {
-    display: inline-block;
-    background: rgba(239,68,68,0.2);
-    color: var(--red);
-    border-radius: 10px;
-    padding: 0 6px;
-    font-size: 10px;
-    margin-left: 4px;
+    display: inline-block; background: rgba(239,68,68,0.2);
+    color: var(--red); border-radius: 10px;
+    padding: 0 5px; font-size: 10px; margin-left: 3px;
   }
-  .job-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 24px;
-    cursor: pointer;
-    border-bottom: 1px solid var(--border);
-    transition: background 0.1s;
-    font-size: 13px;
-  }
-  .job-item:hover { background: var(--surface2); }
-  .job-item.active { background: rgba(108,99,255,0.12); }
-  .job-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-  .dot-pending  { background: var(--yellow); }
-  .dot-processing { background: var(--accent); animation: pulse 1.2s infinite; }
-  .dot-completed { background: var(--green); }
-  .dot-failed   { background: var(--red); }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-
-  .job-id      { font-family: monospace; color: var(--muted); font-size: 11px; flex-shrink: 0; }
-  .job-agent   { color: var(--text); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .job-caller  { color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; }
-  .job-time    { color: var(--muted); font-size: 11px; flex-shrink: 0; }
   .filter-inputs {
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+    padding: 8px 16px; border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 4px;
     background: var(--surface);
   }
   .filter-inputs input {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
-    font-size: 12px;
-    padding: 6px 10px;
-    width: 100%;
-    outline: none;
+    font-size: 11px; padding: 5px 8px;
   }
-  .filter-inputs input:focus { border-color: var(--accent); }
   .filter-clear {
-    font-size: 11px;
-    color: var(--muted);
-    cursor: pointer;
-    text-align: right;
-    padding-top: 2px;
+    font-size: 11px; color: var(--muted); cursor: pointer;
+    text-align: right; padding-top: 2px;
   }
   .filter-clear:hover { color: var(--accent2); }
 
+  .job-item {
+    display: flex; align-items: center;
+    gap: 10px; padding: 9px 20px;
+    cursor: pointer; border-bottom: 1px solid var(--border);
+    transition: background 0.1s; font-size: 13px;
+  }
+  .job-item:hover { background: var(--surface2); }
+  .job-item.active { background: rgba(108,99,255,0.12); }
+  .job-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
   /* ── Right Panel ── */
-  .right-panel {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+  .right-panel { display: flex; flex-direction: column; overflow: hidden; }
+  .result-area { flex: 1; overflow-y: auto; padding: 24px 32px; }
 
-  .result-area {
-    flex: 1;
-    overflow-y: auto;
-    padding: 28px 36px;
-  }
-
-  /* ── Empty state ── */
   .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    gap: 12px;
-    color: var(--muted);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    height: 100%; gap: 12px; color: var(--muted);
   }
   .empty-state .icon { font-size: 48px; opacity: 0.3; }
-  .empty-state p { font-size: 14px; }
 
-  /* ── Spinner ── */
   .spinner-wrap {
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    height: 100%; gap: 16px; color: var(--muted);
+    height: 100%; gap: 14px; color: var(--muted);
   }
   .spinner {
-    width: 40px; height: 40px;
+    width: 36px; height: 36px;
     border: 3px solid var(--border);
     border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+    border-radius: 50%; animation: spin 0.8s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .spinner-label { font-size: 14px; }
 
   /* ── Report ── */
   .report-header {
-    display: flex;
-    align-items: flex-start;
-    gap: 20px;
-    margin-bottom: 28px;
-    flex-wrap: wrap;
+    display: flex; align-items: flex-start;
+    gap: 20px; margin-bottom: 24px; flex-wrap: wrap;
   }
-
   .score-ring {
-    position: relative;
-    width: 90px; height: 90px;
-    flex-shrink: 0;
+    position: relative; width: 90px; height: 90px; flex-shrink: 0;
   }
   .score-ring svg { transform: rotate(-90deg); }
   .score-ring .score-label {
-    position: absolute;
-    inset: 0;
+    position: absolute; inset: 0;
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    font-size: 22px; font-weight: 700;
-    line-height: 1;
+    font-size: 22px; font-weight: 700; line-height: 1;
   }
-  .score-ring .score-sub {
-    font-size: 10px; color: var(--muted); margin-top: 2px;
-  }
+  .score-ring .score-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
 
   .report-meta { flex: 1; min-width: 200px; }
-  .report-meta h2 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .report-meta h2 { font-size: 17px; font-weight: 700; margin-bottom: 5px; }
   .report-meta .badge {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    margin-bottom: 10px;
+    display: inline-block; padding: 3px 10px;
+    border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 8px;
   }
-  .badge-ok   { background: rgba(34,197,94,0.15); color: var(--green); }
-  .badge-fail { background: rgba(239,68,68,0.15);  color: var(--red); }
+  .badge-ok { background: rgba(34,197,94,0.15); color: var(--green); }
+  .badge-fail { background: rgba(239,68,68,0.15); color: var(--red); }
 
   .meta-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 8px;
-    margin-top: 8px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 6px; margin-top: 6px;
   }
   .meta-item {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 8px 12px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 7px 10px;
   }
-  .meta-item .key { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .meta-item .key { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
   .meta-item .val { font-size: 13px; font-weight: 600; margin-top: 2px; }
 
-  /* ── Section card ── */
   .section {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    margin-bottom: 16px;
-    overflow: hidden;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 14px; overflow: hidden;
   }
   .section-title {
-    padding: 12px 16px;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    color: var(--muted);
-    border-bottom: 1px solid var(--border);
+    padding: 10px 14px; font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    color: var(--muted); border-bottom: 1px solid var(--border);
     background: var(--surface2);
   }
-  .section-body { padding: 16px; }
+  .section-body { padding: 14px; }
 
-  .summary-text { font-size: 14px; line-height: 1.6; color: var(--text); }
+  /* ── Scores grid ── */
+  .scores-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .score-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    text-align: center;
+  }
+  .score-card .sc-value {
+    font-size: 26px; font-weight: 700; line-height: 1;
+  }
+  .score-card .sc-label {
+    font-size: 10px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.4px;
+    margin-top: 5px;
+  }
+  .score-card .sc-bar {
+    height: 4px; border-radius: 2px;
+    background: var(--border); margin-top: 8px;
+    overflow: hidden;
+  }
+  .score-card .sc-bar-fill {
+    height: 100%; border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+
+  /* ── Checkpoints ── */
+  .checkpoints-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+  }
+  .checkpoint {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; border-radius: 8px;
+    background: var(--surface2); border: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .checkpoint .cp-icon {
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; flex-shrink: 0;
+  }
+  .cp-hit { background: rgba(34,197,94,0.15); color: var(--green); }
+  .cp-miss { background: rgba(239,68,68,0.15); color: var(--red); }
 
   /* ── Violations ── */
   .violation-card {
     background: rgba(239,68,68,0.07);
     border: 1px solid rgba(239,68,68,0.25);
-    border-radius: 10px;
-    padding: 14px 16px;
-    margin-bottom: 12px;
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 10px;
   }
   .violation-card:last-child { margin-bottom: 0; }
-  .v-rule {
-    font-size: 13px; font-weight: 600;
-    color: #fca5a5;
-    margin-bottom: 6px;
-  }
-  .v-desc { font-size: 13px; color: var(--text); margin-bottom: 8px; line-height: 1.5; }
+  .v-rule { font-size: 13px; font-weight: 600; color: #fca5a5; margin-bottom: 5px; }
+  .v-desc { font-size: 13px; color: var(--text); margin-bottom: 6px; line-height: 1.5; }
   .v-evidence {
-    background: rgba(0,0,0,0.3);
-    border-left: 3px solid var(--red);
-    padding: 8px 12px;
-    border-radius: 0 6px 6px 0;
-    font-size: 12px;
-    font-style: italic;
-    color: var(--muted);
-    line-height: 1.5;
+    background: rgba(0,0,0,0.3); border-left: 3px solid var(--red);
+    padding: 7px 10px; border-radius: 0 6px 6px 0;
+    font-size: 12px; font-style: italic; color: var(--muted); line-height: 1.5;
   }
 
   .no-violations {
-    display: flex; align-items: center; gap: 10px;
-    color: var(--green);
-    font-size: 14px; font-weight: 500;
-    padding: 4px 0;
+    display: flex; align-items: center; gap: 8px;
+    color: var(--green); font-size: 14px; font-weight: 500;
   }
 
-  /* ── Recommendation ── */
   .rec-text {
     font-size: 14px; line-height: 1.6;
-    padding-left: 12px;
-    border-left: 3px solid var(--accent);
+    padding-left: 12px; border-left: 3px solid var(--accent);
     color: var(--text);
   }
 
-  /* ── Job ID strip ── */
   .job-id-strip {
     display: flex; align-items: center; gap: 8px;
-    font-size: 11px; color: var(--muted);
-    margin-bottom: 20px;
+    font-size: 11px; color: var(--muted); margin-bottom: 16px;
   }
   .job-id-strip code {
-    background: var(--surface2);
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 2px 6px;
+    font-family: monospace; font-size: 11px; color: var(--text);
+  }
+
+  /* ── Radar chart container ── */
+  .radar-wrap {
+    display: flex; align-items: center; justify-content: center;
+    max-width: 340px; margin: 0 auto;
+  }
+
+  /* ── Agents / Leaderboard page ── */
+  .agents-page {
+    flex-direction: column; overflow-y: auto; padding: 28px 40px;
+  }
+  .agents-page h2 { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+
+  .leaderboard { width: 100%; border-collapse: separate; border-spacing: 0; }
+  .leaderboard th {
+    text-align: left; padding: 10px 14px;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--muted); border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky; top: 0;
+  }
+  .leaderboard td {
+    padding: 12px 14px; font-size: 13px;
+    border-bottom: 1px solid var(--border);
+  }
+  .leaderboard tr { cursor: pointer; transition: background 0.1s; }
+  .leaderboard tbody tr:hover { background: var(--surface2); }
+
+  .rank-badge {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+  }
+  .rank-1 { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #000; }
+  .rank-2 { background: linear-gradient(135deg, #94a3b8, #64748b); color: #fff; }
+  .rank-3 { background: linear-gradient(135deg, #d97706, #b45309); color: #fff; }
+  .rank-other { background: var(--surface2); color: var(--muted); }
+
+  .agent-score-bar {
+    height: 6px; border-radius: 3px; background: var(--border);
+    width: 80px; display: inline-block; vertical-align: middle;
+    margin-left: 6px;
+  }
+  .agent-score-fill {
+    height: 100%; border-radius: 3px;
+  }
+
+  /* ── Agent detail modal ── */
+  .agent-modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 100; align-items: center; justify-content: center;
+  }
+  .agent-modal-overlay.open { display: flex; }
+  .agent-modal {
+    background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 2px 7px;
-    font-family: monospace;
-    font-size: 11px;
-    color: var(--text);
+    border-radius: 16px;
+    width: 700px; max-width: 95vw;
+    max-height: 85vh; overflow-y: auto;
+    padding: 28px;
+  }
+  .agent-modal-close {
+    float: right; background: none; border: none;
+    color: var(--muted); font-size: 20px; cursor: pointer;
+    padding: 4px 8px;
+  }
+  .agent-modal-close:hover { color: var(--text); }
+  .agent-modal h3 { font-size: 18px; margin-bottom: 16px; }
+
+  .dim-scores-table { width: 100%; border-collapse: collapse; }
+  .dim-scores-table th, .dim-scores-table td {
+    text-align: left; padding: 8px 12px;
+    font-size: 13px; border-bottom: 1px solid var(--border);
+  }
+  .dim-scores-table th {
+    font-size: 11px; text-transform: uppercase;
+    color: var(--muted); font-weight: 600;
+  }
+
+  /* ── Sentiment trajectory ── */
+  .trajectory-tag {
+    display: inline-block;
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+    background: rgba(108,99,255,0.15); color: var(--accent2);
+  }
+
+  /* ── Outcome type tag ── */
+  .outcome-tag {
+    display: inline-block;
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 600;
   }
 
   /* ── Toast ── */
   #toast {
     position: fixed; bottom: 24px; right: 24px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 18px;
-    font-size: 13px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 16px; font-size: 13px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-    opacity: 0;
-    transform: translateY(10px);
+    opacity: 0; transform: translateY(10px);
     transition: opacity 0.2s, transform 0.2s;
-    pointer-events: none;
-    max-width: 320px;
+    pointer-events: none; max-width: 320px; z-index: 200;
   }
   #toast.show { opacity: 1; transform: translateY(0); }
 
-  /* ── Scrollbar ── */
   ::-webkit-scrollbar { width: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
@@ -490,125 +495,192 @@
 <body>
 
 <header>
-  <div class="logo">⚡</div>
+  <div class="logo">V</div>
   <h1>VelocityAI</h1>
-  <span>IndiaMart SOP Compliance Checker</span>
+  <span class="subtitle">SOP Compliance Dashboard</span>
+  <nav>
+    <button class="nav-btn active" onclick="showPage('analyze')">Analyze</button>
+    <button class="nav-btn" onclick="showPage('agents')">Agent Leaderboard</button>
+  </nav>
 </header>
 
-<div class="layout">
+<!-- ═══ PAGE 1: Analyze ═══ -->
+<div class="page active" id="page-analyze">
+  <div class="layout">
 
-  <!-- ── LEFT: Form + Jobs ── -->
-  <div class="left-panel">
-    <div class="panel-header">Submit Transcription</div>
+    <!-- LEFT -->
+    <div class="left-panel">
+      <div class="panel-header">Submit Transcription</div>
+      <div class="form-area">
+        <form id="submitForm">
+          <div class="form-row">
+            <label>Input Mode</label>
+            <div class="input-tabs">
+              <div class="input-tab active" id="tabModeText"  onclick="switchInputMode('text')">📄 Text / File</div>
+              <div class="input-tab"        id="tabModeAudio" onclick="switchInputMode('audio')">🎙️ Audio</div>
+            </div>
 
-    <div class="form-area">
-      <form id="submitForm">
-        <div class="form-row">
-          <label>Input Mode</label>
-          <div class="input-tabs">
-            <div class="input-tab active" id="tabModeText"  onclick="switchInputMode('text')">📄 Text / File</div>
-            <div class="input-tab"        id="tabModeAudio" onclick="switchInputMode('audio')">🎙️ Audio</div>
+            <!-- Text mode -->
+            <div id="textInputMode">
+              <div class="drop-zone" id="dropZone">
+                <input type="file" id="fileInput" accept=".txt,.text,.log,.csv" />
+                <div class="dz-text"><b>Click or drop</b> a .txt / .log / .csv file</div>
+                <div class="dz-filename" id="dzFilename" style="display:none"></div>
+              </div>
+              <div class="or-divider">or paste</div>
+              <textarea id="transcription" placeholder="Paste the full call transcript here…"></textarea>
+            </div>
+
+            <!-- Audio mode -->
+            <div id="audioInputMode" style="display:none">
+              <div class="drop-zone" id="audioDrop">
+                <input type="file" id="audioInput" accept=".wav,.mp3,.m4a,.ogg,.flac,.webm,.aac,.amr,.mp4" />
+                <div class="dz-text"><b>Click or drop</b> an audio file</div>
+                <div class="dz-text" style="font-size:11px;">.wav · .mp3 · .m4a · .ogg · .flac · .webm</div>
+                <div class="dz-filename" id="audioFilename" style="display:none"></div>
+              </div>
+              <div class="audio-info">
+                Audio will be transcribed via <b>Sarvam AI Saarika v2.5</b> — optimised for Indian languages &amp; Hinglish. Supports up to ~30 min per file.
+              </div>
+            </div>
           </div>
-
-          <!-- Text mode -->
-          <div id="textInputMode">
-            <div class="drop-zone" id="dropZone">
-              <input type="file" id="fileInput" accept=".txt,.text,.log,.csv" />
-              <div class="dz-icon">📂</div>
-              <div class="dz-text"><b>Click to browse</b> or drag &amp; drop a file</div>
-              <div class="dz-text">.txt · .log · .csv</div>
-              <div class="dz-filename" id="dzFilename" style="display:none"></div>
+          <div class="row2">
+            <div class="form-row">
+              <label>Agent Name *</label>
+              <input id="agentName" type="text" placeholder="e.g. Rahul Sharma" required />
             </div>
-            <div class="or-divider">or paste manually</div>
-            <textarea id="transcription" placeholder="Paste the full call transcript here…"></textarea>
+            <div class="form-row">
+              <label>Agent ID *</label>
+              <input id="agentId" type="text" placeholder="e.g. AGT-001" required />
+            </div>
           </div>
+          <div class="row2">
+            <div class="form-row">
+              <label>Caller ID *</label>
+              <input id="callerId" type="text" placeholder="e.g. +91 98765 43210" required />
+            </div>
+            <div class="form-row">
+              <label>Caller Name *</label>
+              <input id="callerName" type="text" placeholder="e.g. Amit Kumar" required />
+            </div>
+          </div>
+          <button type="submit" class="btn-submit" id="submitBtn">Run Compliance Check</button>
+        </form>
+      </div>
 
-          <!-- Audio mode -->
-          <div id="audioInputMode" style="display:none">
-            <div class="drop-zone" id="audioDrop">
-              <input type="file" id="audioInput" accept=".wav,.mp3,.m4a,.ogg,.flac,.webm,.aac,.amr,.mp4" />
-              <div class="dz-icon">🎙️</div>
-              <div class="dz-text"><b>Click to browse</b> or drag &amp; drop audio</div>
-              <div class="dz-text">.wav · .mp3 · .m4a · .ogg · .flac · .webm</div>
-              <div class="dz-filename" id="audioFilename" style="display:none"></div>
-            </div>
-            <div class="audio-info">
-              Audio will be transcribed via <b>Sarvam AI Saarika v2.5</b> — optimised for Indian languages &amp; Hinglish. Supports up to ~30 min per file.
-            </div>
+      <div class="jobs-section">
+        <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>Recent Jobs</span>
+          <span id="jobCount" style="color:var(--text);font-size:12px;text-transform:none;letter-spacing:0;"></span>
+        </div>
+        <div class="filter-tabs">
+          <div class="filter-tab active" id="tabAll" onclick="setFilter('all')">All</div>
+          <div class="filter-tab" id="tabFlagged" onclick="setFilter('flagged')">
+            Flagged <span class="tab-badge" id="flaggedCount">0</span>
           </div>
         </div>
-        <div class="row2">
-          <div class="form-row">
-            <label>Agent Name *</label>
-            <input id="agentName" type="text" placeholder="e.g. Rahul Sharma" required />
-          </div>
-          <div class="form-row">
-            <label>Agent ID *</label>
-            <input id="agentId" type="text" placeholder="e.g. AGT-001" required />
-          </div>
+        <div class="filter-inputs">
+          <input id="filterCallerId"   type="text" placeholder="Filter by Caller ID…"    oninput="renderJobsList(cachedJobs)" />
+          <input id="filterCallerName" type="text" placeholder="Filter by Caller Name…" oninput="renderJobsList(cachedJobs)" />
+          <input id="filterAgentName"  type="text" placeholder="Filter by Agent Name…"  oninput="renderJobsList(cachedJobs)" />
+          <div class="filter-clear" onclick="clearFilters()">Clear filters</div>
         </div>
-        <div class="row2">
-          <div class="form-row">
-            <label>Caller ID *</label>
-            <input id="callerId" type="text" placeholder="e.g. +91 98765 43210" required />
-          </div>
-          <div class="form-row">
-            <label>Caller Name *</label>
-            <input id="callerName" type="text" placeholder="e.g. Amit Kumar" required />
-          </div>
-        </div>
-        <button type="submit" class="btn-submit" id="submitBtn">
-          ▶ Run Compliance Check
-        </button>
-      </form>
+        <div class="jobs-list" id="jobsList"></div>
+      </div>
     </div>
 
-    <div class="jobs-section">
-      <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between;">
-        <span>Recent Jobs</span>
-        <span id="jobCount" style="color:var(--text);font-size:12px;text-transform:none;letter-spacing:0;"></span>
-      </div>
-      <div class="filter-tabs">
-        <div class="filter-tab active" id="tabAll" onclick="setFilter('all')">All</div>
-        <div class="filter-tab" id="tabFlagged" onclick="setFilter('flagged')">
-          Flagged <span class="tab-badge" id="flaggedCount">0</span>
+    <!-- RIGHT -->
+    <div class="right-panel">
+      <div class="panel-header">Compliance Report</div>
+      <div class="result-area" id="resultArea">
+        <div class="empty-state">
+          <div class="icon">📋</div>
+          <p>Submit a transcription to see the compliance report</p>
         </div>
       </div>
-      <div class="filter-inputs">
-        <input id="filterCallerId"   type="text" placeholder="Filter by Caller ID…"    oninput="renderJobsList(cachedJobs)" />
-        <input id="filterCallerName" type="text" placeholder="Filter by Caller Name…" oninput="renderJobsList(cachedJobs)" />
-        <input id="filterAgentName"  type="text" placeholder="Filter by Agent Name…"  oninput="renderJobsList(cachedJobs)" />
-        <div class="filter-clear" onclick="clearFilters()">✕ Clear filters</div>
-      </div>
-      <div class="jobs-list" id="jobsList">
-        <!-- populated by JS -->
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ PAGE 2: Agent Leaderboard ═══ -->
+<div class="page" id="page-agents">
+  <div class="agents-page">
+    <h2>Agent Leaderboard</h2>
+    <div id="leaderboardArea">
+      <div class="empty-state" style="height:300px;">
+        <div class="spinner"></div>
+        <p>Loading agent data…</p>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- ── RIGHT: Results ── -->
-  <div class="right-panel">
-    <div class="panel-header">Compliance Report</div>
-    <div class="result-area" id="resultArea">
-      <div class="empty-state">
-        <div class="icon">📋</div>
-        <p>Submit a transcription to see the compliance report</p>
-      </div>
-    </div>
+<!-- Agent Detail Modal -->
+<div class="agent-modal-overlay" id="agentModal">
+  <div class="agent-modal">
+    <button class="agent-modal-close" onclick="closeAgentModal()">&times;</button>
+    <div id="agentModalContent"></div>
   </div>
-
 </div>
 
 <div id="toast"></div>
 
 <script>
-const API = '';  // same origin
+const API = '';
 let pollTimer = null;
 let activeJobId = null;
-const pendingJobs = new Map(); // jobs submitted this session, not yet in Qdrant
-let activeFilter = 'all'; // 'all' | 'flagged'
-let cachedJobs = [];      // last full job list for re-filtering without re-fetching
-let inputMode = 'text';   // 'text' | 'audio'
+const pendingJobs = new Map();
+let activeFilter = 'all';
+let cachedJobs = [];
+let radarChart = null;
+let agentRadarChart = null;
+
+const DIM_LABELS = {
+  script_compliance: 'Script Compliance',
+  objection_handling: 'Objection Handling',
+  call_checkpoints: 'Call Checkpoints',
+  wait_compliance: 'Wait Compliance',
+  agent_sentiment: 'Agent Sentiment',
+  customer_sentiment: 'Customer Sentiment',
+  call_outcome: 'Call Outcome',
+  knowledge_accuracy: 'Knowledge Accuracy',
+};
+const DIM_KEYS = Object.keys(DIM_LABELS);
+
+const CHECKPOINT_LABELS = {
+  greeting: 'Greeting',
+  self_introduction: 'Self Introduction',
+  purpose_statement: 'Purpose Statement',
+  recording_disclosure: 'Recording Disclosure',
+  permission_to_proceed: 'Permission to Proceed',
+  feedback_collection: 'Feedback Collection',
+  proper_closing: 'Proper Closing',
+};
+
+const OUTCOME_COLORS = {
+  renewed: '#22c55e', upsold: '#22c55e', retained: '#3b82f6',
+  callback_scheduled: '#f59e0b', partial_resolution: '#f59e0b',
+  unresolved: '#ef4444', churned: '#ef4444', escalated: '#ef4444',
+};
+
+function scoreColor(s) {
+  if (s >= 80) return '#22c55e';
+  if (s >= 50) return '#f59e0b';
+  return '#ef4444';
+}
+
+// ── Navigation ──
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  event.target.classList.add('active');
+  if (page === 'agents') loadLeaderboard();
+}
+
+// ── Input mode (text / audio) ──
+let inputMode = 'text';
 let selectedAudioFile = null;
 
 function switchInputMode(mode) {
@@ -619,41 +691,16 @@ function switchInputMode(mode) {
   document.getElementById('tabModeAudio').classList.toggle('active', mode === 'audio');
 }
 
-// Normalize flat Qdrant report payload → job-shaped object for renderReport()
-function qdrantToJob(r) {
-  return {
-    job_id: r.job_id,
-    status: 'completed',
-    category: r.category,
-    violations_found: r.violations_found,
-    agent_name: r.agent_name,
-    agent_id: r.agent_id,
-    caller_id: r.caller_id,
-    caller_name: r.caller_name,
-    created_at: r.created_at,
-    report: [{
-      job_id: r.job_id,
-      category: r.category,
-      violations_found: r.violations_found,
-      violations: r.violations || [],
-      compliance_score: r.compliance_score,
-      compliance_summary: r.compliance_summary,
-      recommendation: r.recommendation,
-    }],
-  };
-}
-
-// ── Form submit ──────────────────────────────────────────────────────────────
+// ── Form submit ──
 document.getElementById('submitForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const agentName  = document.getElementById('agentName').value.trim();
   const agentId    = document.getElementById('agentId').value.trim();
   const callerId   = document.getElementById('callerId').value.trim();
   const callerName = document.getElementById('callerName').value.trim();
-  if (!agentName)  { showToast('Agent Name is required', true); return; }
-  if (!agentId)    { showToast('Agent ID is required', true); return; }
-  if (!callerId)   { showToast('Caller ID is required', true); return; }
-  if (!callerName) { showToast('Caller Name is required', true); return; }
+  if (!agentName || !agentId || !callerId || !callerName) {
+    showToast('Agent / Caller fields are required', true); return;
+  }
 
   const btn = document.getElementById('submitBtn');
   btn.disabled = true;
@@ -669,7 +716,7 @@ document.getElementById('submitForm').addEventListener('submit', async (e) => {
 });
 
 async function submitText(text, agentName, agentId, callerId, callerName, btn) {
-  btn.textContent = '⏳ Submitting…';
+  btn.textContent = 'Submitting…';
   try {
     const res = await fetch(`${API}/api/transcription`, {
       method: 'POST',
@@ -678,15 +725,19 @@ async function submitText(text, agentName, agentId, callerId, callerName, btn) {
     });
     if (!res.ok) throw new Error(await res.text());
     const job = await res.json();
-    showToast(`Job submitted — ID: ${job.job_id.slice(0,8)}…`);
-    pendingJobs.set(job.job_id, { job_id: job.job_id, status: 'pending', agent_name: agentName, agent_id: agentId, caller_id: callerId, caller_name: callerName, created_at: new Date().toISOString().replace('Z', '') });
+    showToast(`Job submitted — ${job.job_id.slice(0,8)}…`);
+    pendingJobs.set(job.job_id, {
+      job_id: job.job_id, status: 'pending',
+      agent_name: agentName, agent_id: agentId,
+      caller_id: callerId, caller_name: callerName,
+      created_at: new Date().toISOString().replace('Z', ''),
+    });
     watchJob(job.job_id);
     loadJobs();
   } catch (err) {
     showToast(`Error: ${err.message}`, true);
   } finally {
-    btn.disabled = false;
-    btn.textContent = '▶ Run Compliance Check';
+    btn.disabled = false; btn.textContent = 'Run Compliance Check';
   }
 }
 
@@ -703,20 +754,24 @@ async function submitAudio(file, agentName, agentId, callerId, callerName, btn) 
     const res = await fetch(`${API}/api/transcribe-audio`, { method: 'POST', body: fd });
     if (!res.ok) throw new Error(await res.text());
     const job = await res.json();
-    showToast(`Audio transcribed — analysing… ID: ${job.job_id.slice(0,8)}…`);
-    pendingJobs.set(job.job_id, { job_id: job.job_id, status: 'pending', agent_name: agentName, agent_id: agentId, caller_id: callerId, caller_name: callerName, created_at: new Date().toISOString().replace('Z', '') });
+    showToast(`Audio transcribed — analysing… ${job.job_id.slice(0,8)}…`);
+    pendingJobs.set(job.job_id, {
+      job_id: job.job_id, status: 'pending',
+      agent_name: agentName, agent_id: agentId,
+      caller_id: callerId, caller_name: callerName,
+      created_at: new Date().toISOString().replace('Z', ''),
+    });
     watchJob(job.job_id);
     loadJobs();
   } catch (err) {
     showToast(`Error: ${err.message}`, true);
     document.getElementById('resultArea').innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>Submit a transcription to see the compliance report</p></div>`;
   } finally {
-    btn.disabled = false;
-    btn.textContent = '▶ Run Compliance Check';
+    btn.disabled = false; btn.textContent = 'Run Compliance Check';
   }
 }
 
-// ── Poll a job ───────────────────────────────────────────────────────────────
+// ── Poll ──
 function watchJob(jobId) {
   clearInterval(pollTimer);
   activeJobId = jobId;
@@ -727,47 +782,43 @@ function watchJob(jobId) {
     renderReport(job);
     loadJobs();
     if (job.status === 'completed' || job.status === 'failed') {
-      clearInterval(pollTimer);
-      pendingJobs.delete(jobId);
+      clearInterval(pollTimer); pendingJobs.delete(jobId);
     }
   }, 2000);
 }
 
 async function fetchJob(id) {
-  try {
-    const r = await fetch(`${API}/api/jobs/${id}`);
-    if (!r.ok) return null;
-    return await r.json();
-  } catch { return null; }
+  try { const r = await fetch(`${API}/api/jobs/${id}`); return r.ok ? await r.json() : null; }
+  catch { return null; }
 }
 
-// ── Load recent jobs list (from shared Qdrant, merged with local pending) ────
+// ── Jobs list ──
+function qdrantToJob(r) {
+  return {
+    job_id: r.job_id, status: 'completed', category: r.category,
+    violations_found: r.violations_found, agent_name: r.agent_name,
+    agent_id: r.agent_id, caller_id: r.caller_id, caller_name: r.caller_name,
+    created_at: r.created_at,
+    report: [r],
+  };
+}
+
 async function loadJobs() {
   try {
     const r = await fetch(`${API}/api/reports?limit=30`);
     if (!r.ok) return;
     const data = await r.json();
-    // deduplicate: one sidebar row per job_id (latest analysis wins)
     const byJobId = new Map();
-    for (const r of data.reports || []) {
-      if (!byJobId.has(r.job_id) ||
-          new Date(r.created_at) > new Date(byJobId.get(r.job_id).created_at)) {
-        byJobId.set(r.job_id, r);
+    for (const rec of data.reports || []) {
+      if (!byJobId.has(rec.job_id) || new Date(rec.created_at) > new Date(byJobId.get(rec.job_id).created_at)) {
+        byJobId.set(rec.job_id, rec);
       }
     }
     const qdrantJobs = Array.from(byJobId.values()).map(qdrantToJob);
-
-    // drop from pendingJobs anything that has landed in Qdrant
     const qdrantIds = new Set(qdrantJobs.map(j => j.job_id));
-    for (const id of pendingJobs.keys()) {
-      if (qdrantIds.has(id)) pendingJobs.delete(id);
-    }
-
-    // merge local pending + Qdrant completed, newest first
+    for (const id of pendingJobs.keys()) { if (qdrantIds.has(id)) pendingJobs.delete(id); }
     const allJobs = [...Array.from(pendingJobs.values()), ...qdrantJobs]
-      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
-      .slice(0, 30);
-
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)).slice(0, 30);
     cachedJobs = allJobs;
     renderJobsList(allJobs);
   } catch {}
@@ -789,43 +840,44 @@ function setFilter(f) {
 
 function renderJobsList(jobs) {
   const el = document.getElementById('jobsList');
-
-  // update flagged badge
-  const flaggedCount = jobs.filter(j => j.violations_found).length;
-  document.getElementById('flaggedCount').textContent = flaggedCount;
-
-  // apply filter tab
+  const flagged = jobs.filter(j => j.violations_found).length;
+  document.getElementById('flaggedCount').textContent = flagged;
   let visible = activeFilter === 'flagged' ? jobs.filter(j => j.violations_found) : jobs;
-
-  // apply caller_id and agent_id filters
-  const qCallerId   = (document.getElementById('filterCallerId')?.value   || '').trim().toLowerCase();
-  const qCallerName = (document.getElementById('filterCallerName')?.value || '').trim().toLowerCase();
-  const qAgentName  = (document.getElementById('filterAgentName')?.value  || '').trim().toLowerCase();
-  if (qCallerId)   visible = visible.filter(j => (j.caller_id   || '').toLowerCase().includes(qCallerId));
-  if (qCallerName) visible = visible.filter(j => (j.caller_name || '').toLowerCase().includes(qCallerName));
-  if (qAgentName)  visible = visible.filter(j => (j.agent_name  || '').toLowerCase().includes(qAgentName));
-
-  const hasFilter = qCallerId || qCallerName || qAgentName;
+  const qCid = (document.getElementById('filterCallerId')?.value || '').trim().toLowerCase();
+  const qCnm = (document.getElementById('filterCallerName')?.value || '').trim().toLowerCase();
+  const qAnm = (document.getElementById('filterAgentName')?.value || '').trim().toLowerCase();
+  if (qCid) visible = visible.filter(j => (j.caller_id || '').toLowerCase().includes(qCid));
+  if (qCnm) visible = visible.filter(j => (j.caller_name || '').toLowerCase().includes(qCnm));
+  if (qAnm) visible = visible.filter(j => (j.agent_name || '').toLowerCase().includes(qAnm));
   document.getElementById('jobCount').textContent = `${visible.length} job${visible.length !== 1 ? 's' : ''}`;
-
   if (!visible.length) {
-    el.innerHTML = `<div style="padding:16px 24px;color:var(--muted);font-size:13px;">${hasFilter ? 'No matches' : activeFilter === 'flagged' ? 'No flagged reports' : 'No jobs yet'}</div>`;
+    el.innerHTML = `<div style="padding:14px 20px;color:var(--muted);font-size:13px;">No jobs yet</div>`;
     return;
   }
   el.innerHTML = visible.map(j => `
-    <div class="job-item ${j.job_id === activeJobId ? 'active' : ''}"
-         onclick="loadJobById('${j.job_id}')">
-      <div class="job-dot" style="background:${j.violations_found ? 'var(--red)' : (j.status === 'completed' ? 'var(--green)' : j.status === 'processing' ? 'var(--accent)' : 'var(--yellow)')}${j.status === 'processing' ? ';animation:pulse 1.2s infinite' : ''}"></div>
+    <div class="job-item ${j.job_id === activeJobId ? 'active' : ''}" onclick="loadJobById('${j.job_id}')">
+      <div class="job-dot" style="background:${j.violations_found ? 'var(--red)' : (j.status === 'completed' ? 'var(--green)' : j.status === 'processing' ? 'var(--accent)' : 'var(--yellow)')}"></div>
       <div style="flex:1;min-width:0;">
-        <div class="job-agent">${j.agent_name || 'Unknown agent'}</div>
-        ${j.caller_id ? `<div class="job-caller">${j.caller_id}</div>` : ''}
+        <div style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${j.agent_name || 'Unknown'}</div>
+        <div style="font-size:11px;color:var(--muted);">${j.caller_name || j.caller_id || ''}</div>
       </div>
       <div style="text-align:right;flex-shrink:0;">
-        <div class="job-id">${j.job_id.slice(0,8)}</div>
-        <div class="job-time">${timeAgo(j.created_at)}</div>
+        <div style="font-family:monospace;color:var(--muted);font-size:11px;">${j.job_id.slice(0,8)}</div>
+        <div style="font-size:11px;color:var(--muted);">${timeAgo(j.created_at)}</div>
       </div>
     </div>
   `).join('');
+}
+
+async function loadJobById(id) {
+  activeJobId = id;
+  const report = await fetchReport(id);
+  if (report) { renderReport(report); loadJobs(); return; }
+  const job = await fetchJob(id);
+  if (!job) return;
+  if (job.status === 'pending' || job.status === 'processing') watchJob(id);
+  else renderReport(job);
+  loadJobs();
 }
 
 async function fetchReport(id) {
@@ -837,55 +889,23 @@ async function fetchReport(id) {
     if (!analyses.length) return null;
     const latest = analyses[analyses.length - 1];
     return {
-      job_id: latest.job_id,
-      status: 'completed',
-      agent_name: latest.agent_name,
-      agent_id: latest.agent_id,
-      caller_id: latest.caller_id,
-      caller_name: latest.caller_name,
-      created_at: analyses[0].created_at,  // job's first analysis date
+      job_id: latest.job_id, status: 'completed',
+      agent_name: latest.agent_name, agent_id: latest.agent_id,
+      caller_id: latest.caller_id, caller_name: latest.caller_name,
+      created_at: analyses[0].created_at,
       violations_found: latest.violations_found,
       category: latest.category,
-      report: analyses.map(a => ({
-        job_id: a.job_id,
-        category: a.category,
-        violations_found: a.violations_found,
-        violations: a.violations || [],
-        compliance_score: a.compliance_score,
-        compliance_summary: a.compliance_summary,
-        recommendation: a.recommendation,
-        created_at: a.created_at,
-      })),
+      report: analyses,
     };
   } catch { return null; }
 }
 
-async function loadJobById(id) {
-  activeJobId = id;
-  // try Qdrant first (completed, shared across machines)
-  const report = await fetchReport(id);
-  if (report) {
-    renderReport(report);
-    loadJobs();
-    return;
-  }
-  // fall back to local SQLite (pending / processing jobs on this machine)
-  const job = await fetchJob(id);
-  if (!job) return;
-  if (job.status === 'pending' || job.status === 'processing') {
-    watchJob(id);
-  } else {
-    renderReport(job);
-  }
-  loadJobs();
-}
-
-// ── Render ───────────────────────────────────────────────────────────────────
+// ── Render report ──
 function showTranscribingSpinner() {
   document.getElementById('resultArea').innerHTML = `
     <div class="spinner-wrap">
       <div class="spinner"></div>
-      <div class="spinner-label">Transcribing audio via Sarvam AI…</div>
+      <div style="font-size:14px;">Transcribing audio via Sarvam AI…</div>
       <div style="font-size:11px;color:var(--muted);margin-top:4px;">This may take a few seconds</div>
     </div>`;
 }
@@ -894,76 +914,62 @@ function showSpinner(jobId) {
   document.getElementById('resultArea').innerHTML = `
     <div class="spinner-wrap">
       <div class="spinner"></div>
-      <div class="spinner-label">Analysing transcription…</div>
+      <div style="font-size:14px;">Analysing transcription…</div>
       <div style="font-size:11px;color:var(--muted);font-family:monospace">${jobId}</div>
     </div>`;
 }
 
 function renderReport(job) {
   const area = document.getElementById('resultArea');
-
-  if (job.status === 'pending' || job.status === 'processing') {
-    showSpinner(job.job_id);
-    return;
-  }
-
+  if (job.status === 'pending' || job.status === 'processing') { showSpinner(job.job_id); return; }
   if (job.status === 'failed') {
     area.innerHTML = `
       <div class="job-id-strip">Job <code>${job.job_id}</code></div>
-      <div class="section">
-        <div class="section-title" style="color:var(--red)">Processing Failed</div>
-        <div class="section-body">
-          <p style="color:var(--muted);font-size:13px;">${job.error || 'Unknown error'}</p>
-        </div>
+      <div class="section"><div class="section-title" style="color:var(--red)">Failed</div>
+        <div class="section-body"><p style="color:var(--muted);font-size:13px;">${job.error || 'Unknown error'}</p></div>
       </div>`;
     return;
   }
 
-  // report is a list of analyses; show latest, older ones in history
   const allReports = Array.isArray(job.report) ? job.report : (job.report ? [job.report] : []);
   const r = allReports.length ? allReports[allReports.length - 1] : {};
   const score = r.compliance_score ?? 0;
-  const hasViolations = r.violations_found;
   const violations = r.violations || [];
-  const color = score >= 80 ? '#22c55e' : score >= 50 ? '#f59e0b' : '#ef4444';
-  const circumference = 2 * Math.PI * 38;
-  const dash = (score / 100) * circumference;
+  const scores = r.scores || {};
+  const checkpoints = r.checkpoints || {};
+  const outcomeType = r.call_outcome_type || '';
+  const trajectory = r.customer_sentiment_trajectory || '';
+  const color = scoreColor(score);
+  const circ = 2 * Math.PI * 38;
+  const dash = (score / 100) * circ;
 
   area.innerHTML = `
     <div class="job-id-strip">
       Job <code>${job.job_id}</code>
-      <span style="color:var(--green);font-size:11px;">✓ Completed</span>
+      <span style="color:var(--green);font-size:11px;">Completed</span>
     </div>
 
     <div class="report-header">
       <div class="score-ring">
         <svg width="90" height="90" viewBox="0 0 90 90">
           <circle cx="45" cy="45" r="38" fill="none" stroke="var(--border)" stroke-width="7"/>
-          <circle cx="45" cy="45" r="38" fill="none"
-            stroke="${color}" stroke-width="7"
-            stroke-dasharray="${dash} ${circumference}"
-            stroke-linecap="round"/>
+          <circle cx="45" cy="45" r="38" fill="none" stroke="${color}" stroke-width="7"
+            stroke-dasharray="${dash} ${circ}" stroke-linecap="round"/>
         </svg>
         <div class="score-label">
           <span style="color:${color}">${score}</span>
           <span class="score-sub">/ 100</span>
         </div>
       </div>
-
       <div class="report-meta">
         <h2>Compliance Report</h2>
-        <span class="badge ${hasViolations ? 'badge-fail' : 'badge-ok'}">
-          ${hasViolations ? `⚠ ${violations.length} Violation${violations.length !== 1 ? 's' : ''} Found` : '✓ Fully Compliant'}
+        <span class="badge ${r.violations_found ? 'badge-fail' : 'badge-ok'}">
+          ${r.violations_found ? `${violations.length} Violation${violations.length !== 1 ? 's' : ''}` : 'Fully Compliant'}
         </span>
+        ${outcomeType ? `<span class="outcome-tag" style="background:${OUTCOME_COLORS[outcomeType] || 'var(--accent)'}22;color:${OUTCOME_COLORS[outcomeType] || 'var(--accent)'};">${outcomeType.replace(/_/g,' ')}</span>` : ''}
+        ${trajectory ? `<span class="trajectory-tag" style="margin-left:4px;">${trajectory}</span>` : ''}
         <div class="meta-grid">
-          <div class="meta-item">
-            <div class="key">Category</div>
-            <div class="val">${formatCategory(r.category)}</div>
-          </div>
-          <div class="meta-item">
-            <div class="key">Score</div>
-            <div class="val" style="color:${color}">${score}/100</div>
-          </div>
+          <div class="meta-item"><div class="key">Category</div><div class="val">${formatCat(r.category)}</div></div>
           ${job.agent_name ? `<div class="meta-item"><div class="key">Agent</div><div class="val">${job.agent_name}</div></div>` : ''}
           ${job.agent_id ? `<div class="meta-item"><div class="key">Agent ID</div><div class="val">${job.agent_id}</div></div>` : ''}
           ${job.caller_name ? `<div class="meta-item"><div class="key">Caller</div><div class="val">${job.caller_name}</div></div>` : ''}
@@ -972,69 +978,284 @@ function renderReport(job) {
       </div>
     </div>
 
+    <!-- Dimension Scores -->
     <div class="section">
-      <div class="section-title">Summary</div>
+      <div class="section-title">Dimension Scores</div>
       <div class="section-body">
-        <p class="summary-text">${r.compliance_summary || '—'}</p>
+        <div class="scores-grid">
+          ${DIM_KEYS.map(k => {
+            const v = scores[k] ?? '—';
+            const c = typeof v === 'number' ? scoreColor(v) : 'var(--muted)';
+            return `<div class="score-card">
+              <div class="sc-value" style="color:${c}">${v}</div>
+              <div class="sc-label">${DIM_LABELS[k]}</div>
+              ${typeof v === 'number' ? `<div class="sc-bar"><div class="sc-bar-fill" style="width:${v}%;background:${c};"></div></div>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+        <div style="margin-top:20px;">
+          <div class="radar-wrap"><canvas id="radarCanvas" width="340" height="340"></canvas></div>
+        </div>
       </div>
     </div>
 
+    <!-- Checkpoints -->
     <div class="section">
-      <div class="section-title">
-        Violations ${violations.length ? `(${violations.length})` : ''}
+      <div class="section-title">Call Checkpoints</div>
+      <div class="section-body">
+        <div class="checkpoints-grid">
+          ${Object.entries(CHECKPOINT_LABELS).map(([k, lbl]) => {
+            const hit = checkpoints[k];
+            const icon = hit ? 'cp-hit' : 'cp-miss';
+            const sym = hit ? '&#10003;' : '&#10007;';
+            return `<div class="checkpoint">
+              <div class="cp-icon ${icon}">${sym}</div>
+              <span>${lbl}</span>
+            </div>`;
+          }).join('')}
+        </div>
       </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="section">
+      <div class="section-title">Summary</div>
+      <div class="section-body"><p style="font-size:14px;line-height:1.6;">${r.compliance_summary || '—'}</p></div>
+    </div>
+
+    <!-- Violations -->
+    <div class="section">
+      <div class="section-title">Violations ${violations.length ? `(${violations.length})` : ''}</div>
       <div class="section-body">
         ${violations.length === 0
-          ? `<div class="no-violations">✓ No violations detected — this call meets all SOP requirements.</div>`
+          ? `<div class="no-violations">No violations — call meets all SOP requirements.</div>`
           : violations.map((v, i) => `
             <div class="violation-card">
-              <div class="v-rule">Rule ${i+1}: ${v.rule}</div>
-              <div class="v-desc">${v.description}</div>
+              <div class="v-rule">Rule ${i+1}: ${v.rule || ''}</div>
+              <div class="v-desc">${v.description || ''}</div>
               ${v.evidence ? `<div class="v-evidence">"${v.evidence}"</div>` : ''}
             </div>`).join('')
         }
       </div>
     </div>
 
+    <!-- Recommendation -->
     <div class="section">
       <div class="section-title">Recommendation</div>
-      <div class="section-body">
-        <p class="rec-text">${r.recommendation || '—'}</p>
-      </div>
+      <div class="section-body"><p class="rec-text">${r.recommendation || '—'}</p></div>
     </div>
-
-    ${allReports.length > 1 ? `
-    <div class="section">
-      <div class="section-title">Previous Analyses (${allReports.length - 1})</div>
-      <div class="section-body">
-        ${[...allReports].reverse().slice(1).map((pr, i) => {
-          const ps = pr.compliance_score ?? 0;
-          const pc = ps >= 80 ? '#22c55e' : ps >= 50 ? '#f59e0b' : '#ef4444';
-          return `<div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-              <span style="font-size:12px;color:var(--muted);">Analysis #${allReports.length - 1 - i} &nbsp;·&nbsp; ${pr.created_at ? timeAgo(pr.created_at) : ''}</span>
-              <span style="font-size:13px;font-weight:700;color:${pc}">${ps}/100</span>
-            </div>
-            <p style="font-size:13px;color:var(--text);line-height:1.5;">${pr.compliance_summary || '—'}</p>
-          </div>`;
-        }).join('')}
-      </div>
-    </div>` : ''}
   `;
+
+  // Radar chart
+  setTimeout(() => {
+    const canvas = document.getElementById('radarCanvas');
+    if (!canvas) return;
+    if (radarChart) radarChart.destroy();
+    const vals = DIM_KEYS.map(k => scores[k] ?? 0);
+    radarChart = new Chart(canvas.getContext('2d'), {
+      type: 'radar',
+      data: {
+        labels: DIM_KEYS.map(k => DIM_LABELS[k]),
+        datasets: [{
+          data: vals,
+          backgroundColor: 'rgba(108,99,255,0.2)',
+          borderColor: '#6c63ff',
+          borderWidth: 2,
+          pointBackgroundColor: vals.map(v => scoreColor(v)),
+          pointBorderColor: '#fff',
+          pointRadius: 4,
+        }],
+      },
+      options: {
+        scales: {
+          r: {
+            min: 0, max: 100,
+            ticks: { stepSize: 20, color: '#64748b', backdropColor: 'transparent', font: { size: 10 } },
+            grid: { color: '#2e3250' },
+            angleLines: { color: '#2e3250' },
+            pointLabels: { color: '#e2e8f0', font: { size: 11 } },
+          }
+        },
+        plugins: { legend: { display: false } },
+        responsive: false,
+      },
+    });
+  }, 50);
 }
 
-// ── Utilities ────────────────────────────────────────────────────────────────
-function formatCategory(cat) {
+// ── Leaderboard ──
+async function loadLeaderboard() {
+  const area = document.getElementById('leaderboardArea');
+  try {
+    const r = await fetch(`${API}/api/agents`);
+    if (!r.ok) throw new Error('Failed');
+    const data = await r.json();
+    const agents = data.agents || [];
+    if (!agents.length) {
+      area.innerHTML = `<div class="empty-state" style="height:200px;"><p>No agent data yet. Submit some transcriptions first.</p></div>`;
+      return;
+    }
+    area.innerHTML = `
+      <table class="leaderboard">
+        <thead><tr>
+          <th style="width:50px">#</th>
+          <th>Agent</th>
+          <th>Calls</th>
+          <th>Avg Score</th>
+          ${DIM_KEYS.map(k => `<th style="font-size:10px;">${DIM_LABELS[k].split(' ').map(w=>w[0]).join('')}</th>`).join('')}
+          <th>Last Call</th>
+        </tr></thead>
+        <tbody>
+          ${agents.map((a, i) => {
+            const sc = a.avg_compliance_score ?? 0;
+            const c = scoreColor(sc);
+            const rankCls = i < 3 ? `rank-${i+1}` : 'rank-other';
+            return `<tr onclick="openAgentDetail('${a.agent_id}')">
+              <td><span class="rank-badge ${rankCls}">${i+1}</span></td>
+              <td>
+                <div style="font-weight:600;">${a.agent_name || 'Unknown'}</div>
+                <div style="font-size:11px;color:var(--muted);">${a.agent_id || ''}</div>
+              </td>
+              <td>${a.total_calls}</td>
+              <td>
+                <span style="font-weight:700;color:${c}">${sc}</span>
+                <div class="agent-score-bar"><div class="agent-score-fill" style="width:${sc}%;background:${c};"></div></div>
+              </td>
+              ${DIM_KEYS.map(k => {
+                const v = a.avg_scores?.[k];
+                return `<td style="color:${v != null ? scoreColor(v) : 'var(--muted)'};font-weight:600;">${v ?? '—'}</td>`;
+              }).join('')}
+              <td style="font-size:11px;color:var(--muted);">${timeAgo(a.last_call)}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+  } catch (err) {
+    area.innerHTML = `<div class="empty-state" style="height:200px;"><p>Error loading agents: ${err.message}</p></div>`;
+  }
+}
+
+async function openAgentDetail(agentId) {
+  const modal = document.getElementById('agentModal');
+  const content = document.getElementById('agentModalContent');
+  modal.classList.add('open');
+  content.innerHTML = `<div class="spinner-wrap" style="height:200px;"><div class="spinner"></div></div>`;
+
+  try {
+    const r = await fetch(`${API}/api/agents/${encodeURIComponent(agentId)}/scores`);
+    if (!r.ok) throw new Error('Failed');
+    const data = await r.json();
+    const sc = data.avg_compliance_score ?? 0;
+    const c = scoreColor(sc);
+    const circ = 2 * Math.PI * 38;
+    const dash = (sc / 100) * circ;
+
+    content.innerHTML = `
+      <div style="display:flex;align-items:center;gap:20px;margin-bottom:24px;">
+        <div class="score-ring">
+          <svg width="90" height="90" viewBox="0 0 90 90">
+            <circle cx="45" cy="45" r="38" fill="none" stroke="var(--border)" stroke-width="7"/>
+            <circle cx="45" cy="45" r="38" fill="none" stroke="${c}" stroke-width="7"
+              stroke-dasharray="${dash} ${circ}" stroke-linecap="round"/>
+          </svg>
+          <div class="score-label">
+            <span style="color:${c}">${sc}</span>
+            <span class="score-sub">/ 100</span>
+          </div>
+        </div>
+        <div>
+          <h3 style="margin:0;">${data.agent_name || 'Unknown'}</h3>
+          <div style="color:var(--muted);font-size:13px;margin-top:4px;">ID: ${data.agent_id || '—'} &middot; ${data.total_calls} call${data.total_calls !== 1 ? 's' : ''} analysed</div>
+        </div>
+      </div>
+
+      <table class="dim-scores-table">
+        <thead><tr><th>Dimension</th><th>Average</th><th></th></tr></thead>
+        <tbody>
+          ${DIM_KEYS.map(k => {
+            const v = data.avg_scores?.[k];
+            const vc = v != null ? scoreColor(v) : 'var(--muted)';
+            return `<tr>
+              <td>${DIM_LABELS[k]}</td>
+              <td style="font-weight:700;color:${vc}">${v ?? '—'}</td>
+              <td style="width:120px;">${v != null ? `<div class="agent-score-bar" style="width:100%;"><div class="agent-score-fill" style="width:${v}%;background:${vc};"></div></div>` : ''}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+
+      <div style="margin-top:20px;display:flex;justify-content:center;">
+        <canvas id="agentRadarCanvas" width="320" height="320"></canvas>
+      </div>
+
+      ${data.recent_calls?.length ? `
+      <div style="margin-top:24px;">
+        <h4 style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Recent Calls</h4>
+        ${data.recent_calls.slice(0, 5).map(call => {
+          const cs = call.compliance_score ?? 0;
+          const cc = scoreColor(cs);
+          return `<div style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:var(--surface2);">
+            <span style="font-size:18px;font-weight:700;color:${cc};min-width:40px;">${cs}</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;">${call.caller_name || call.caller_id || '—'}</div>
+              <div style="font-size:11px;color:var(--muted);">${call.category ? formatCat(call.category) : '—'} &middot; ${call.violations_found ? 'Violations found' : 'Clean'}</div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);">${timeAgo(call.created_at)}</div>
+          </div>`;
+        }).join('')}
+      </div>` : ''}
+    `;
+
+    // Agent radar
+    setTimeout(() => {
+      const canvas = document.getElementById('agentRadarCanvas');
+      if (!canvas) return;
+      if (agentRadarChart) agentRadarChart.destroy();
+      const vals = DIM_KEYS.map(k => data.avg_scores?.[k] ?? 0);
+      agentRadarChart = new Chart(canvas.getContext('2d'), {
+        type: 'radar',
+        data: {
+          labels: DIM_KEYS.map(k => DIM_LABELS[k]),
+          datasets: [{
+            data: vals,
+            backgroundColor: 'rgba(167,139,250,0.2)',
+            borderColor: '#a78bfa',
+            borderWidth: 2,
+            pointBackgroundColor: vals.map(v => scoreColor(v)),
+            pointBorderColor: '#fff', pointRadius: 4,
+          }],
+        },
+        options: {
+          scales: { r: { min: 0, max: 100, ticks: { stepSize: 20, color: '#64748b', backdropColor: 'transparent', font: { size: 9 } }, grid: { color: '#2e3250' }, angleLines: { color: '#2e3250' }, pointLabels: { color: '#e2e8f0', font: { size: 10 } } } },
+          plugins: { legend: { display: false } },
+          responsive: false,
+        },
+      });
+    }, 50);
+  } catch (err) {
+    content.innerHTML = `<p style="color:var(--red);">Error: ${err.message}</p>`;
+  }
+}
+
+function closeAgentModal() {
+  document.getElementById('agentModal').classList.remove('open');
+  if (agentRadarChart) { agentRadarChart.destroy(); agentRadarChart = null; }
+}
+
+// ── Utilities ──
+function formatCat(cat) {
   if (!cat) return '—';
   return cat.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
 function timeAgo(iso) {
   if (!iso) return '';
-  const diff = (Date.now() - new Date(iso + 'Z').getTime()) / 1000;
-  if (diff < 60)  return `${Math.floor(diff)}s ago`;
+  const diff = (Date.now() - new Date(iso + (iso.endsWith('Z') ? '' : 'Z')).getTime()) / 1000;
+  if (diff < 0) return 'just now';
+  if (diff < 60) return `${Math.floor(diff)}s ago`;
   if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
-  return `${Math.floor(diff/3600)}h ago`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+  return `${Math.floor(diff/86400)}d ago`;
 }
 
 function showToast(msg, isError = false) {
@@ -1045,8 +1266,8 @@ function showToast(msg, isError = false) {
   setTimeout(() => t.classList.remove('show'), 3500);
 }
 
-// ── Text file drag-and-drop ──────────────────────────────────────────────────
-const dropZone  = document.getElementById('dropZone');
+// ── File upload ──
+const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
 const dzFilename = document.getElementById('dzFilename');
 
@@ -1055,23 +1276,18 @@ function loadFile(file) {
   const reader = new FileReader();
   reader.onload = (e) => {
     document.getElementById('transcription').value = e.target.result;
-    dzFilename.textContent = '✓ ' + file.name;
+    dzFilename.textContent = file.name;
     dzFilename.style.display = 'block';
     showToast(`Loaded: ${file.name}`);
   };
   reader.readAsText(file);
 }
-
 fileInput.addEventListener('change', (e) => loadFile(e.target.files[0]));
-dropZone.addEventListener('dragover',  (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
-dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('dragover'));
-dropZone.addEventListener('drop', (e) => {
-  e.preventDefault();
-  dropZone.classList.remove('dragover');
-  loadFile(e.dataTransfer.files[0]);
-});
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); loadFile(e.dataTransfer.files[0]); });
 
-// ── Audio file drag-and-drop ─────────────────────────────────────────────────
+// ── Audio file upload ──
 const audioDrop     = document.getElementById('audioDrop');
 const audioInput    = document.getElementById('audioInput');
 const audioFilename = document.getElementById('audioFilename');
@@ -1083,17 +1299,17 @@ function loadAudioFile(file) {
   audioFilename.style.display = 'block';
   showToast(`Audio ready: ${file.name}`);
 }
-
 audioInput.addEventListener('change', (e) => loadAudioFile(e.target.files[0]));
 audioDrop.addEventListener('dragover',  (e) => { e.preventDefault(); audioDrop.classList.add('dragover'); });
 audioDrop.addEventListener('dragleave', ()  => audioDrop.classList.remove('dragover'));
-audioDrop.addEventListener('drop', (e) => {
-  e.preventDefault();
-  audioDrop.classList.remove('dragover');
-  loadAudioFile(e.dataTransfer.files[0]);
+audioDrop.addEventListener('drop', (e) => { e.preventDefault(); audioDrop.classList.remove('dragover'); loadAudioFile(e.dataTransfer.files[0]); });
+
+// Close modal on overlay click
+document.getElementById('agentModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeAgentModal();
 });
 
-// ── Boot ─────────────────────────────────────────────────────────────────────
+// ── Boot ──
 loadJobs();
 setInterval(loadJobs, 10000);
 </script>

@@ -17,7 +17,7 @@ from pydantic import BaseModel
 
 from config import SARVAM_API_KEY
 from database import create_job, get_job, get_job_by_caller_id, init_db, list_jobs, update_job
-from qdrant_helper import delete_report, get_report, get_reports_by_filter, list_reports
+from qdrant_helper import delete_report, get_report, get_reports_by_filter, list_reports, get_agent_scores, get_all_agents_summary
 
 app = FastAPI(
     title="VelocityAI SOP Compliance Checker",
@@ -256,3 +256,27 @@ def delete_stored_report(job_id: str):
         delete_report(job_id)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Qdrant error: {e}")
+
+
+# ── Agent scores dashboard ──────────────────────────────────────────────────
+
+@app.get("/api/agents")
+def list_agents_summary():
+    """Return aggregated scores for all agents — powers the leaderboard."""
+    try:
+        agents = get_all_agents_summary()
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Qdrant error: {e}")
+    return {"agents": agents}
+
+
+@app.get("/api/agents/{agent_id}/scores")
+def get_agent_score_card(agent_id: str):
+    """Return detailed scores for a single agent — powers the agent scorecard."""
+    try:
+        data = get_agent_scores(agent_id=agent_id)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Qdrant error: {e}")
+    if data["total_calls"] == 0:
+        raise HTTPException(status_code=404, detail="No reports found for this agent")
+    return data

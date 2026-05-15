@@ -173,6 +173,100 @@ def get_report(job_id: str) -> list[dict]:
     return sorted(payloads, key=lambda p: p.get("created_at", ""))
 
 
+def get_agent_scores(agent_id: str = None, agent_name: str = None) -> dict:
+    """Aggregate per-dimension scores across all reports for an agent.
+
+    Returns { agent_name, agent_id, total_calls, avg_scores: {dim: avg}, recent_calls: [...] }
+    """
+    body: dict = {"limit": 200, "with_payload": True, "with_vector": False}
+    must = []
+    if agent_id:
+        must.append({"key": "agent_id", "match": {"value": agent_id}})
+    if must:
+        body["filter"] = {"must": must}
+
+    r = _http_client().post(f"/collections/{REPORTS_COLLECTION}/points/scroll", json=body)
+    r.raise_for_status()
+    payloads = [p["payload"] for p in r.json()["result"].get("points", [])]
+
+    if agent_name and not agent_id:
+        needle = agent_name.lower()
+        payloads = [p for p in payloads if needle in (p.get("agent_name") or "").lower()]
+
+    if not payloads:
+        return {"agent_name": agent_name, "agent_id": agent_id, "total_calls": 0, "avg_scores": {}, "recent_calls": []}
+
+    dims = ["script_compliance", "objection_handling", "call_checkpoints",
+            "wait_compliance", "agent_sentiment", "customer_sentiment",
+            "call_outcome", "knowledge_accuracy"]
+    sums = {d: 0 for d in dims}
+    counts = {d: 0 for d in dims}
+
+    for p in payloads:
+        scores = p.get("scores", {})
+        for d in dims:
+            if d in scores and scores[d] is not None:
+                sums[d] += scores[d]
+                counts[d] += 1
+
+    avg_scores = {d: round(sums[d] / counts[d], 1) if counts[d] > 0 else None for d in dims}
+    avg_overall = round(sum(v for v in avg_scores.values() if v is not None) / max(sum(1 for v in avg_scores.values() if v is not None), 1), 1)
+
+    sorted_payloads = sorted(payloads, key=lambda p: p.get("created_at", ""), reverse=True)
+
+    return {
+        "agent_name": sorted_payloads[0].get("agent_name") if sorted_payloads else agent_name,
+        "agent_id": sorted_payloads[0].get("agent_id") if sorted_payloads else agent_id,
+        "total_calls": len(payloads),
+        "avg_compliance_score": avg_overall,
+        "avg_scores": avg_scores,
+        "recent_calls": sorted_payloads[:10],
+    }
+
+
+def get_all_agents_summary() -> list[dict]:
+    """Return aggregated scores for all agents, sorted by avg compliance score."""
+    body: dict = {"limit": 500, "with_payload": True, "with_vector": False}
+    r = _http_client().post(f"/collections/{REPORTS_COLLECTION}/points/scroll", json=body)
+    r.raise_for_status()
+    payloads = [p["payload"] for p in r.json()["result"].get("points", [])]
+
+    # Group by agent_id
+    agents: dict[str, list] = {}
+    for p in payloads:
+        aid = p.get("agent_id") or p.get("agent_name") or "unknown"
+        agents.setdefault(aid, []).append(p)
+
+    dims = ["script_compliance", "objection_handling", "call_checkpoints",
+            "wait_compliance", "agent_sentiment", "customer_sentiment",
+            "call_outcome", "knowledge_accuracy"]
+
+    results = []
+    for aid, reports in agents.items():
+        sums = {d: 0 for d in dims}
+        counts = {d: 0 for d in dims}
+        for p in reports:
+            scores = p.get("scores", {})
+            for d in dims:
+                if d in scores and scores[d] is not None:
+                    sums[d] += scores[d]
+                    counts[d] += 1
+        avg_scores = {d: round(sums[d] / counts[d], 1) if counts[d] > 0 else None for d in dims}
+        valid = [v for v in avg_scores.values() if v is not None]
+        avg_overall = round(sum(valid) / len(valid), 1) if valid else 0
+
+        results.append({
+            "agent_id": reports[0].get("agent_id", aid),
+            "agent_name": reports[0].get("agent_name", "Unknown"),
+            "total_calls": len(reports),
+            "avg_compliance_score": avg_overall,
+            "avg_scores": avg_scores,
+            "last_call": max((p.get("created_at", "") for p in reports), default=""),
+        })
+
+    return sorted(results, key=lambda x: x["avg_compliance_score"], reverse=True)
+
+
 def delete_report(job_id: str):
     """Delete all analysis points for a job_id from Qdrant."""
     r = _http_client().post(
@@ -224,6 +318,11 @@ def store_report(job: dict, report: dict):
             "violations": report.get("violations", []),
             "compliance_summary": summary,
             "recommendation": recommendation,
+            # ── per-dimension scores ──
+            "scores": report.get("scores", {}),
+            "checkpoints": report.get("checkpoints", {}),
+            "call_outcome_type": report.get("call_outcome_type"),
+            "customer_sentiment_trajectory": report.get("customer_sentiment_trajectory"),
         },
     }
     r = _http_client().put(

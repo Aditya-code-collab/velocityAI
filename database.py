@@ -30,7 +30,7 @@ def init_db():
         )
     """)
     # migrate existing DBs that predate these columns
-    for col in ("agent_id TEXT", "caller_name TEXT"):
+    for col in ("agent_id TEXT", "caller_name TEXT", "compliance_score INTEGER"):
         try:
             conn.execute(f"ALTER TABLE jobs ADD COLUMN {col}")
         except Exception:
