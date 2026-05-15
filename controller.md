@@ -34,6 +34,18 @@ full IndiaMART help/policy article — that is the compliance reference text.
 `rules[]` is normally empty for KB articles; only the legacy
 `indiamart_sops` collection populates it.
 
+### KB relevance check
+
+After receiving the search results, check the top hit's `score`:
+
+- **score ≥ 0.60** — sufficient match; proceed with normal scoring.
+- **score < 0.60** — no matching SOP found. For `script_compliance`,
+  `objection_handling`, and `knowledge_accuracy` score_reasons, begin with:
+  "No matching SOP was found for this call topic — the knowledge base
+  appears to be outdated or incomplete for this category and needs to be
+  updated." Then continue with the normal per-dimension reasoning based on
+  what was observable in the transcript. Cap `script_compliance` at 50.
+
 ## Step 3 — Analyse the transcript and compute ALL scores
 
 Analyse the transcription against the retrieved KB articles across **eight
@@ -181,6 +193,16 @@ Construct the full report JSON. Note the new `scores` object and
     "call_outcome": 80,
     "knowledge_accuracy": 90
   },
+  "score_reasons": {
+    "script_compliance": "Agent used the engagement script but skipped the recording disclosure step (−10) and deviated from the prescribed upsell flow (−15).",
+    "objection_handling": "No objections were raised during the call; dimension not applicable — scored 100.",
+    "call_checkpoints": "Greeting, self-introduction, permission, recording disclosure, and closing were completed. Purpose statement and feedback collection were missed (−14 each).",
+    "wait_compliance": "Agent paused after greeting and permission ask but continued speaking without waiting after the feedback question (−15) and after the objection response (−15).",
+    "agent_sentiment": "Professional and empathetic tone throughout. Used 'I understand' and positive reframing twice. No dismissive or impatient language detected.",
+    "customer_sentiment": "Customer started frustrated about lead quality but gradually became more receptive after the agent explained the BuyLead allocation policy. Ended with neutral-positive sentiment.",
+    "call_outcome": "Agent successfully scheduled a follow-up callback with a clear next step; customer agreed to review the proposal.",
+    "knowledge_accuracy": "All product information was accurate. Agent correctly stated BuyLead limits and allocation rules per KB article. No false promises detected."
+  },
   "checkpoints": {
     "greeting": true,
     "self_introduction": true,
@@ -275,5 +297,16 @@ Then exit.
 - Never skip Step 8 — always exit cleanly.
 - ALL eight scores MUST be computed for every transcript, even if some
   dimensions are not applicable (score them 100 with a note).
-- The `scores` object, `checkpoints` object, `call_outcome_type`, and
-  `customer_sentiment_trajectory` are REQUIRED fields in every report.
+- The `scores` object, `checkpoints` object, `call_outcome_type`,
+  `customer_sentiment_trajectory`, and `score_reasons` are REQUIRED fields
+  in every report.
+- `score_reasons` MUST contain one entry per dimension key. Each reason
+  must be 1–3 sentences explaining what evidence led to that score: what
+  the agent did right, what they missed, and how the deductions were
+  applied. For N/A dimensions write why the dimension does not apply.
+- For `script_compliance`, `objection_handling`, and `knowledge_accuracy`
+  reasons: if top KB hit score < 0.60, begin the reason with "No matching
+  SOP was found for this call topic — the knowledge base appears to be
+  outdated or incomplete for this category and needs to be updated." Then
+  still provide the full per-dimension analysis based on the transcript.
+  If score ≥ 0.60, proceed directly with the analysis (no caveat needed).

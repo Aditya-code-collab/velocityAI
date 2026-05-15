@@ -99,13 +99,19 @@ POST /api/transcription  (requires: transcription, agent_name, agent_id, caller_
         │   flags: --allowedTools Bash --dangerously-skip-permissions
         │
         ├─ Step 1: claim next pending job from SQLite
-        ├─ Step 2: embed transcription → search SOP_SEARCH_COLLECTION → top-3 hits
-        ├─ Step 3: language reasoning — derive expectations from top hit's
-        │           content (or rules[] if present) → check transcription
-        ├─ Step 4: compute compliance_score (0–100)
-        ├─ Step 5: append report to history in SQLite + new Qdrant point per analysis
-        ├─ Step 6: send email alert if violations found
-        └─ Step 7: print JOB_DONE and exit
+        ├─ Step 2: embed transcription → search SOP_SEARCH_COLLECTION → top-5 hits
+        │           KB relevance check: top-hit score < 0.60 → prepend "No matching
+        │           SOP found — KB outdated/incomplete" to affected score_reasons
+        ├─ Step 3: analyse transcript across 8 scoring dimensions (0–100 each):
+        │           SOP compliance, objection handling, call checkpoints,
+        │           wait compliance, agent sentiment, customer sentiment,
+        │           call outcome, knowledge accuracy
+        ├─ Step 4: compute weighted compliance_score (0–100)
+        ├─ Step 5: build report JSON incl. scores, score_reasons, checkpoints,
+        │           call_outcome_type, customer_sentiment_trajectory
+        ├─ Step 6: append report to history in SQLite + new Qdrant point per analysis
+        ├─ Step 7: send email alert if violations found
+        └─ Step 8: print JOB_DONE and exit
         │
         ▼
 GET /api/jobs/{job_id}        → report array + violations + compliance_score  (from SQLite)
@@ -168,18 +174,28 @@ Each compliance analysis run creates a **new Qdrant point** (point ID = fresh UU
 vector  = embed(compliance_summary + " " + recommendation)   ← 1536-dim float array
 
 payload fields:
-  job_id              string   UUID of the job (shared across re-runs for same caller)
-  agent_name          string   name of the agent who made the call
-  agent_id            string   agent employee ID
-  caller_id           string   caller identifier
-  caller_name         string   caller's full name
-  created_at          string   ISO-8601 timestamp of this analysis run
-  category            string   matched KB topic
-  violations_found    bool     true if any violations detected
-  compliance_score    int      0–100
-  violations          object[] list of {rule, description, evidence}
-  compliance_summary  string   narrative summary of the compliance result
-  recommendation      string   remediation advice
+  job_id                        string   UUID of the job (shared across re-runs for same caller)
+  agent_name                    string   name of the agent who made the call
+  agent_id                      string   agent employee ID
+  caller_id                     string   caller identifier
+  caller_name                   string   caller's full name
+  created_at                    string   ISO-8601 timestamp of this analysis run
+  category                      string   matched KB topic
+  violations_found              bool     true if any violations detected
+  compliance_score              int      0–100 weighted overall score
+  violations                    object[] list of {rule, description, evidence}
+  compliance_summary            string   narrative summary of the compliance result
+  recommendation                string   remediation advice
+  scores                        object   per-dimension scores {sop_compliance, objection_handling,
+                                         call_checkpoints, wait_compliance, agent_sentiment,
+                                         customer_sentiment, call_outcome, knowledge_accuracy}
+  score_reasons                 object   per-dimension reason strings (same keys as scores);
+                                         if KB top-hit score < 0.60, affected reasons are prefixed
+                                         with "No matching SOP was found — KB outdated/incomplete"
+  checkpoints                   object   boolean flags for 7 mandatory call checkpoints
+  call_outcome_type             string   renewed|upsold|retained|callback_scheduled|
+                                         partial_resolution|unresolved|churned|escalated
+  customer_sentiment_trajectory string   e.g. "frustrated → reassured → satisfied"
 ```
 
 Qdrant write failure is non-fatal — the SQLite record is always saved first.
@@ -211,7 +227,7 @@ Filtering via `GET /api/reports`:
 - Filter tabs: All / Flagged (violations only, with live count badge)
 - Three filter inputs: Caller ID (exact), Caller Name (partial), Agent Name (partial) — all work together (AND)
 - Clear filters link
-- Shows agent name + caller ID per row; red dot for flagged, green for compliant
+- Shows agent name + caller name per row; compliance score (coloured green/amber/red); red dot for flagged, green for compliant
 
 **Key JS behaviours:**
 - **Input mode tabs:** "📄 Text / File" (default) or "🎙️ Audio" — switches between two drop zones
@@ -223,6 +239,8 @@ Filtering via `GET /api/reports`:
 - Recent jobs list auto-refreshes every 10s
 - Score ring colour: green ≥ 80, amber ≥ 50, red < 50
 - Clicking a job loads full analysis history (all runs for that caller)
+- **Dimension score cards** are clickable — opens a modal showing the dimension name, score, colour-coded bar, and the `score_reason` text from the report. Cards without a reason (old reports) are non-interactive. Reasons are stored in `currentScoreReasons` (module-level JS variable set on each `renderReport` call) to avoid HTML-attribute escaping issues.
+- "Script Compliance" dimension is labelled **"SOP Compliance"** in the UI (`DIM_LABELS` in `index.html`)
 
 To add a new field to the report, update `controller.md` (add the field to the JSON schema section) and the `renderReport()` function in `index.html`.
 
@@ -264,11 +282,44 @@ Each job stores a **list** of analysis objects in SQLite (one per run). The Qdra
   "violations": [
     { "rule": "...", "description": "...", "evidence": "<verbatim quote>" }
   ],
-  "compliance_score": 0,
+  "scores": {
+    "script_compliance": 75,
+    "objection_handling": 100,
+    "call_checkpoints": 86,
+    "wait_compliance": 70,
+    "agent_sentiment": 80,
+    "customer_sentiment": 60,
+    "call_outcome": 80,
+    "knowledge_accuracy": 90
+  },
+  "score_reasons": {
+    "script_compliance": "No matching SOP was found... (if KB score < 0.60) OR full analysis text",
+    "objection_handling": "...",
+    "call_checkpoints": "...",
+    "wait_compliance": "...",
+    "agent_sentiment": "...",
+    "customer_sentiment": "...",
+    "call_outcome": "...",
+    "knowledge_accuracy": "..."
+  },
+  "checkpoints": {
+    "greeting": true,
+    "self_introduction": true,
+    "purpose_statement": false,
+    "recording_disclosure": true,
+    "permission_to_proceed": true,
+    "feedback_collection": false,
+    "proper_closing": true
+  },
+  "call_outcome_type": "callback_scheduled",
+  "customer_sentiment_trajectory": "frustrated → reassured → satisfied",
+  "compliance_score": 78,
   "compliance_summary": "...",
   "recommendation": "..."
 }
 ```
+
+**KB relevance rule:** If the top Qdrant hit's cosine similarity score is < 0.60, the `score_reasons` for `script_compliance`, `objection_handling`, and `knowledge_accuracy` are prefixed with *"No matching SOP was found for this call topic — the knowledge base appears to be outdated or incomplete for this category and needs to be updated."* The per-dimension analysis still follows. `script_compliance` is additionally capped at 50.
 
 ## Environment variables (`.env`)
 

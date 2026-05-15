@@ -320,6 +320,7 @@ def store_report(job: dict, report: dict):
             "recommendation": recommendation,
             # ── per-dimension scores ──
             "scores": report.get("scores", {}),
+            "score_reasons": report.get("score_reasons", {}),
             "checkpoints": report.get("checkpoints", {}),
             "call_outcome_type": report.get("call_outcome_type"),
             "customer_sentiment_trajectory": report.get("customer_sentiment_trajectory"),

@@ -322,6 +322,45 @@
     height: 100%; border-radius: 2px;
     transition: width 0.5s ease;
   }
+  .score-card[data-reason] {
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .score-card[data-reason]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    border-color: var(--accent);
+  }
+  .score-card[data-reason] .sc-label::after {
+    content: ' ⓘ';
+    font-size: 9px;
+    opacity: 0.5;
+  }
+
+  /* ── Score reason modal ── */
+  .reason-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55); z-index: 1000;
+    align-items: center; justify-content: center;
+  }
+  .reason-overlay.open { display: flex; }
+  .reason-modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 24px 28px;
+    max-width: 460px; width: 90%; position: relative;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+  }
+  .reason-modal-close {
+    position: absolute; top: 14px; right: 16px;
+    background: none; border: none; color: var(--muted);
+    font-size: 18px; cursor: pointer; line-height: 1;
+  }
+  .reason-modal-close:hover { color: var(--text); }
+  .reason-modal-dim { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); margin-bottom: 6px; }
+  .reason-modal-score { font-size: 40px; font-weight: 800; line-height: 1; margin-bottom: 12px; }
+  .reason-modal-bar { height: 6px; border-radius: 3px; background: var(--border); margin-bottom: 18px; overflow: hidden; }
+  .reason-modal-bar-fill { height: 100%; border-radius: 3px; }
+  .reason-modal-body { font-size: 14px; line-height: 1.65; color: var(--text); }
 
   /* ── Checkpoints ── */
   .checkpoints-grid {
@@ -626,6 +665,17 @@
 
 <div id="toast"></div>
 
+<!-- Score reason modal -->
+<div class="reason-overlay" id="reasonOverlay" onclick="closeReasonModal(event)">
+  <div class="reason-modal" id="reasonModal">
+    <button class="reason-modal-close" onclick="closeReasonModal(null)">✕</button>
+    <div class="reason-modal-dim" id="rmDim"></div>
+    <div class="reason-modal-score" id="rmScore"></div>
+    <div class="reason-modal-bar"><div class="reason-modal-bar-fill" id="rmBar"></div></div>
+    <div class="reason-modal-body" id="rmBody"></div>
+  </div>
+</div>
+
 <script>
 const API = '';
 let pollTimer = null;
@@ -635,9 +685,10 @@ let activeFilter = 'all';
 let cachedJobs = [];
 let radarChart = null;
 let agentRadarChart = null;
+let currentScoreReasons = {};
 
 const DIM_LABELS = {
-  script_compliance: 'Script Compliance',
+  script_compliance: 'SOP Compliance',
   objection_handling: 'Objection Handling',
   call_checkpoints: 'Call Checkpoints',
   wait_compliance: 'Wait Compliance',
@@ -669,6 +720,26 @@ function scoreColor(s) {
   if (s >= 50) return '#f59e0b';
   return '#ef4444';
 }
+
+function openReasonModal(dimKey, score) {
+  const label = DIM_LABELS[dimKey] || dimKey;
+  const color = typeof score === 'number' ? scoreColor(score) : 'var(--muted)';
+  document.getElementById('rmDim').textContent = label;
+  document.getElementById('rmScore').textContent = typeof score === 'number' ? score + ' / 100' : '—';
+  document.getElementById('rmScore').style.color = color;
+  const bar = document.getElementById('rmBar');
+  bar.style.width = (typeof score === 'number' ? score : 0) + '%';
+  bar.style.background = color;
+  document.getElementById('rmBody').textContent = currentScoreReasons[dimKey] || 'No reason recorded for this score.';
+  document.getElementById('reasonOverlay').classList.add('open');
+}
+
+function closeReasonModal(e) {
+  if (e && document.getElementById('reasonModal').contains(e.target)) return;
+  document.getElementById('reasonOverlay').classList.remove('open');
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeReasonModal(null); });
 
 // ── Navigation ──
 function showPage(page) {
@@ -799,6 +870,8 @@ function qdrantToJob(r) {
     violations_found: r.violations_found, agent_name: r.agent_name,
     agent_id: r.agent_id, caller_id: r.caller_id, caller_name: r.caller_name,
     created_at: r.created_at,
+    compliance_score: r.compliance_score,
+    scores: r.scores,
     report: [r],
   };
 }
@@ -854,7 +927,10 @@ function renderJobsList(jobs) {
     el.innerHTML = `<div style="padding:14px 20px;color:var(--muted);font-size:13px;">No jobs yet</div>`;
     return;
   }
-  el.innerHTML = visible.map(j => `
+  el.innerHTML = visible.map(j => {
+    const sc = j.compliance_score ?? (j.report?.[0]?.compliance_score ?? null);
+    const scColor = sc != null ? scoreColor(sc) : 'var(--muted)';
+    return `
     <div class="job-item ${j.job_id === activeJobId ? 'active' : ''}" onclick="loadJobById('${j.job_id}')">
       <div class="job-dot" style="background:${j.violations_found ? 'var(--red)' : (j.status === 'completed' ? 'var(--green)' : j.status === 'processing' ? 'var(--accent)' : 'var(--yellow)')}"></div>
       <div style="flex:1;min-width:0;">
@@ -862,11 +938,11 @@ function renderJobsList(jobs) {
         <div style="font-size:11px;color:var(--muted);">${j.caller_name || j.caller_id || ''}</div>
       </div>
       <div style="text-align:right;flex-shrink:0;">
-        <div style="font-family:monospace;color:var(--muted);font-size:11px;">${j.job_id.slice(0,8)}</div>
-        <div style="font-size:11px;color:var(--muted);">${timeAgo(j.created_at)}</div>
+        ${sc != null ? `<div style="font-family:monospace;font-size:14px;font-weight:700;color:${scColor};line-height:1;">${sc}<span style="font-size:9px;font-weight:400;color:var(--muted);">/100</span></div>` : `<div style="font-size:11px;color:var(--muted);">pending</div>`}
+        <div style="font-size:10px;color:var(--muted);margin-top:2px;">${timeAgo(j.created_at)}</div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 async function loadJobById(id) {
@@ -936,6 +1012,7 @@ function renderReport(job) {
   const score = r.compliance_score ?? 0;
   const violations = r.violations || [];
   const scores = r.scores || {};
+  currentScoreReasons = r.score_reasons || {};
   const checkpoints = r.checkpoints || {};
   const outcomeType = r.call_outcome_type || '';
   const trajectory = r.customer_sentiment_trajectory || '';
@@ -986,7 +1063,9 @@ function renderReport(job) {
           ${DIM_KEYS.map(k => {
             const v = scores[k] ?? '—';
             const c = typeof v === 'number' ? scoreColor(v) : 'var(--muted)';
-            return `<div class="score-card">
+            const hasReason = !!currentScoreReasons[k];
+            const clickAttr = hasReason ? `data-reason="1" onclick="openReasonModal('${k}', ${typeof v === 'number' ? v : 'null'})"` : '';
+            return `<div class="score-card" ${clickAttr}>
               <div class="sc-value" style="color:${c}">${v}</div>
               <div class="sc-label">${DIM_LABELS[k]}</div>
               ${typeof v === 'number' ? `<div class="sc-bar"><div class="sc-bar-fill" style="width:${v}%;background:${c};"></div></div>` : ''}
