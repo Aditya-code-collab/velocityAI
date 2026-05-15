@@ -127,11 +127,26 @@ def list_reports(limit: int = 20, offset: str | None = None) -> tuple[list[dict]
     result = r.json()["result"]
     points = sorted(
         [p["payload"] for p in result.get("points", [])],
-        key=lambda p: p.get("created_at", ""),
+        key=lambda p: p.get("created_at") or "",
         reverse=True,
     )
     next_offset = result.get("next_page_offset")
     return points, next_offset
+
+
+def get_reports_by_caller(caller_id: str) -> list[dict]:
+    """Fetch all analyses for a caller_id across all jobs, sorted oldest-first."""
+    body = {
+        "limit": 100,
+        "with_payload": True,
+        "with_vector": False,
+        "filter": {"must": [{"key": "caller_id", "match": {"value": caller_id}}]},
+    }
+    r = _http_client().post(f"/collections/{REPORTS_COLLECTION}/points/scroll", json=body)
+    r.raise_for_status()
+    points = r.json()["result"].get("points", [])
+    payloads = [p["payload"] for p in points]
+    return sorted(payloads, key=lambda p: p.get("created_at") or "")
 
 
 def get_report(job_id: str) -> list[dict]:

@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from database import create_job, get_job, get_job_by_caller_id, init_db, list_jobs, update_job
-from qdrant_helper import delete_report, get_report, list_reports
+from qdrant_helper import delete_report, get_report, get_reports_by_caller, list_reports
 
 app = FastAPI(
     title="VelocityAI SOP Compliance Checker",
@@ -140,6 +140,18 @@ def list_stored_reports(limit: int = 20, offset: str | None = None):
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Qdrant error: {e}")
     return {"reports": records, "next_offset": next_offset}
+
+
+@app.get("/api/caller/{caller_id}")
+def get_caller_history(caller_id: str):
+    """Fetch all compliance analyses for a caller_id across all jobs (oldest first)."""
+    try:
+        analyses = get_reports_by_caller(caller_id)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Qdrant error: {e}")
+    if not analyses:
+        raise HTTPException(status_code=404, detail="No reports found for this caller")
+    return {"caller_id": caller_id, "total": len(analyses), "analyses": analyses}
 
 
 @app.get("/api/reports/{job_id}")

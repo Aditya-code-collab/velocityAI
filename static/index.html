@@ -169,6 +169,34 @@
     overflow-y: auto;
     max-height: 220px;
   }
+  .filter-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 10px 24px 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .filter-tab {
+    padding: 5px 12px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+  .filter-tab:hover { color: var(--text); }
+  .filter-tab.active { color: var(--accent2); border-bottom-color: var(--accent2); }
+  .filter-tab .tab-badge {
+    display: inline-block;
+    background: rgba(239,68,68,0.2);
+    color: var(--red);
+    border-radius: 10px;
+    padding: 0 6px;
+    font-size: 10px;
+    margin-left: 4px;
+  }
   .job-item {
     display: flex;
     align-items: center;
@@ -192,9 +220,25 @@
   .dot-failed   { background: var(--red); }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-  .job-id    { font-family: monospace; color: var(--muted); font-size: 11px; flex-shrink: 0; }
-  .job-agent { color: var(--text); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .job-time  { color: var(--muted); font-size: 11px; flex-shrink: 0; }
+  .job-id      { font-family: monospace; color: var(--muted); font-size: 11px; flex-shrink: 0; }
+  .job-agent   { color: var(--text); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .job-caller  { color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; }
+  .job-time    { color: var(--muted); font-size: 11px; flex-shrink: 0; }
+  .search-box  {
+    padding: 8px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .search-box input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 12px;
+    padding: 6px 10px;
+    width: 100%;
+    outline: none;
+  }
+  .search-box input:focus { border-color: var(--accent); }
 
   /* ── Right Panel ── */
   .right-panel {
@@ -447,6 +491,15 @@
         <span>Recent Jobs</span>
         <span id="jobCount" style="color:var(--text);font-size:12px;text-transform:none;letter-spacing:0;"></span>
       </div>
+      <div class="filter-tabs">
+        <div class="filter-tab active" id="tabAll" onclick="setFilter('all')">All</div>
+        <div class="filter-tab" id="tabFlagged" onclick="setFilter('flagged')">
+          Flagged <span class="tab-badge" id="flaggedCount">0</span>
+        </div>
+      </div>
+      <div class="search-box">
+        <input id="callerSearch" type="text" placeholder="Search by caller ID or agent…" oninput="renderJobsList(cachedJobs)" />
+      </div>
       <div class="jobs-list" id="jobsList">
         <!-- populated by JS -->
       </div>
@@ -473,6 +526,8 @@ const API = '';  // same origin
 let pollTimer = null;
 let activeJobId = null;
 const pendingJobs = new Map(); // jobs submitted this session, not yet in Qdrant
+let activeFilter = 'all'; // 'all' | 'flagged'
+let cachedJobs = [];      // last full job list for re-filtering without re-fetching
 
 // Normalize flat Qdrant report payload → job-shaped object for renderReport()
 function qdrantToJob(r) {
@@ -482,6 +537,7 @@ function qdrantToJob(r) {
     category: r.category,
     violations_found: r.violations_found,
     agent_name: r.agent_name,
+    caller_id: r.caller_id,
     created_at: r.created_at,
     report: [{
       job_id: r.job_id,
@@ -586,24 +642,55 @@ async function loadJobs() {
       .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
       .slice(0, 30);
 
+    cachedJobs = allJobs;
     renderJobsList(allJobs);
   } catch {}
 }
 
+function setFilter(f) {
+  activeFilter = f;
+  document.getElementById('tabAll').classList.toggle('active', f === 'all');
+  document.getElementById('tabFlagged').classList.toggle('active', f === 'flagged');
+  renderJobsList(cachedJobs);
+}
+
 function renderJobsList(jobs) {
   const el = document.getElementById('jobsList');
-  document.getElementById('jobCount').textContent = `${jobs.length} job${jobs.length !== 1 ? 's' : ''}`;
-  if (!jobs.length) {
-    el.innerHTML = '<div style="padding:16px 24px;color:var(--muted);font-size:13px;">No jobs yet</div>';
+
+  // update flagged badge
+  const flaggedCount = jobs.filter(j => j.violations_found).length;
+  document.getElementById('flaggedCount').textContent = flaggedCount;
+
+  // apply filter tab
+  let visible = activeFilter === 'flagged' ? jobs.filter(j => j.violations_found) : jobs;
+
+  // apply caller/agent search
+  const q = (document.getElementById('callerSearch')?.value || '').trim().toLowerCase();
+  if (q) {
+    visible = visible.filter(j =>
+      (j.caller_id || '').toLowerCase().includes(q) ||
+      (j.agent_name || '').toLowerCase().includes(q)
+    );
+  }
+
+  document.getElementById('jobCount').textContent = `${visible.length} job${visible.length !== 1 ? 's' : ''}`;
+
+  if (!visible.length) {
+    el.innerHTML = `<div style="padding:16px 24px;color:var(--muted);font-size:13px;">${q ? 'No matches' : activeFilter === 'flagged' ? 'No flagged reports' : 'No jobs yet'}</div>`;
     return;
   }
-  el.innerHTML = jobs.map(j => `
+  el.innerHTML = visible.map(j => `
     <div class="job-item ${j.job_id === activeJobId ? 'active' : ''}"
          onclick="loadJobById('${j.job_id}')">
-      <div class="job-dot dot-${j.status}"></div>
-      <div class="job-agent">${j.agent_name || 'Unknown agent'}</div>
-      <div class="job-id">${j.job_id.slice(0,8)}</div>
-      <div class="job-time">${timeAgo(j.created_at)}</div>
+      <div class="job-dot" style="background:${j.violations_found ? 'var(--red)' : (j.status === 'completed' ? 'var(--green)' : j.status === 'processing' ? 'var(--accent)' : 'var(--yellow)')}${j.status === 'processing' ? ';animation:pulse 1.2s infinite' : ''}"></div>
+      <div style="flex:1;min-width:0;">
+        <div class="job-agent">${j.agent_name || 'Unknown agent'}</div>
+        ${j.caller_id ? `<div class="job-caller">${j.caller_id}</div>` : ''}
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div class="job-id">${j.job_id.slice(0,8)}</div>
+        <div class="job-time">${timeAgo(j.created_at)}</div>
+      </div>
     </div>
   `).join('');
 }
@@ -620,6 +707,7 @@ async function fetchReport(id) {
       job_id: latest.job_id,
       status: 'completed',
       agent_name: latest.agent_name,
+      caller_id: latest.caller_id,
       created_at: analyses[0].created_at,  // job's first analysis date
       violations_found: latest.violations_found,
       category: latest.category,
@@ -733,6 +821,7 @@ function renderReport(job) {
             <div class="val" style="color:${color}">${score}/100</div>
           </div>
           ${job.agent_name ? `<div class="meta-item"><div class="key">Agent</div><div class="val">${job.agent_name}</div></div>` : ''}
+          ${job.caller_id ? `<div class="meta-item"><div class="key">Caller ID</div><div class="val">${job.caller_id}</div></div>` : ''}
         </div>
       </div>
     </div>
