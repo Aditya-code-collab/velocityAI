@@ -4,6 +4,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+LOG_DIR="$SCRIPT_DIR/logs"
+mkdir -p "$LOG_DIR"
+
 # --- checks ---
 if [ ! -f ".env" ]; then
   echo "ERROR: .env file not found. Ask a teammate for the values."
@@ -17,30 +20,22 @@ if [ ! -d ".venv" ]; then
   .venv/bin/pip install -q -r requirements.txt
 fi
 
-# --- cleanup on exit ---
-cleanup() {
-  echo ""
-  echo "Shutting down..."
-  kill "$SERVER_PID" "$CLAUDE_PID" 2>/dev/null || true
-  wait "$SERVER_PID" "$CLAUDE_PID" 2>/dev/null || true
-  echo "Done."
-}
-trap cleanup SIGINT SIGTERM
-
 # --- start server ---
 echo "Starting API server on http://localhost:8001 ..."
-.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8001 2>&1 | sed 's/^/[server] /' &
-SERVER_PID=$!
+nohup .venv/bin/uvicorn main:app --host 0.0.0.0 --port 8001 \
+  > "$LOG_DIR/server.log" 2>&1 &
+echo $! > "$LOG_DIR/server.pid"
 
 # give the server a moment to bind the port
 sleep 2
 
 # --- start claude controller ---
 echo "Starting Claude compliance controller..."
-bash open_claude.sh 2>&1 | sed 's/^/[claude] /' &
-CLAUDE_PID=$!
+nohup bash open_claude.sh \
+  > "$LOG_DIR/claude.log" 2>&1 &
+echo $! > "$LOG_DIR/claude.pid"
 
-echo "Pipeline is up. Press Ctrl+C to stop."
-echo ""
-
-wait "$SERVER_PID" "$CLAUDE_PID"
+echo "Pipeline is up (background)."
+echo "  API:    http://localhost:8001"
+echo "  Logs:   $LOG_DIR/server.log  |  $LOG_DIR/claude.log"
+echo "  Stop:   ./stop_all.sh"
