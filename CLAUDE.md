@@ -8,7 +8,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
+> For a full step-by-step guide see [`run.md`](run.md).
+
 ```bash
+# Start everything with one command (recommended)
+./start.sh
+
+# --- or manually ---
+
 # Create and activate virtualenv
 python3 -m venv .venv && source .venv/bin/activate
 
@@ -18,10 +25,10 @@ pip install -r requirements.txt
 # Seed Qdrant with IndiaMart SOPs (run once, or after editing setup_sops.py)
 .venv/bin/python3 setup_sops.py
 
-# Start API server (port 8001)
+# Start API server (port 8001) — UI served at http://localhost:8001
 .venv/bin/uvicorn main:app --host 0.0.0.0 --port 8001 --reload
 
-# Start worker (separate terminal)
+# Start worker (separate terminal — run only one at a time)
 .venv/bin/python3 worker.py
 
 # Smoke test
@@ -137,6 +144,8 @@ To add a new section to the report, update both `agent_prompt.py` (add the field
 
 | File | Role |
 |------|------|
+| `run.md` | Step-by-step guide for setting up and running the app |
+| `start.sh` | One-command script to start the API server and worker together |
 | `main.py` | FastAPI app — `POST /api/transcription`, `GET /api/jobs/{id}`, `GET /api/jobs`, `GET /health`, `GET /` (serves UI) |
 | `static/index.html` | Single-file SPA — submit form, live polling, report renderer |
 | `worker.py` | Polls SQLite every 5s, spawns `claude --print` subprocess per job |
