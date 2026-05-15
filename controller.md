@@ -54,20 +54,36 @@ Score 0–100. Deduct points per violation severity. 0 = fully non-compliant, 10
 
 ## Step 5 — Persist the report
 
+Append the new report to the existing list (same caller may have prior analyses under this job_id).
+
 ```bash
 .venv/bin/python3 -c "
 import json
-from database import update_job
+from database import get_job, update_job
 from qdrant_helper import store_report
 
 report = <report_json>
-job = {'id': '<job_id>', 'agent_name': '<agent_name>', 'caller_id': '<caller_id>'}
+job_id = '<job_id>'
+job = {'id': job_id, 'agent_name': '<agent_name>', 'caller_id': '<caller_id>'}
+
+# append to history
+existing = get_job(job_id)
+prev = existing.get('report')
+if prev:
+    try:
+        parsed = json.loads(prev)
+        history = parsed if isinstance(parsed, list) else [parsed]
+    except Exception:
+        history = []
+else:
+    history = []
+history.append(report)
 
 update_job(
-    '<job_id>',
+    job_id,
     status='completed',
     category=report['category'],
-    report=json.dumps(report),
+    report=json.dumps(history),
     violations_found=int(report['violations_found']),
 )
 try:

@@ -483,7 +483,7 @@ function qdrantToJob(r) {
     violations_found: r.violations_found,
     agent_name: r.agent_name,
     created_at: r.created_at,
-    report: {
+    report: [{
       job_id: r.job_id,
       category: r.category,
       violations_found: r.violations_found,
@@ -491,7 +491,7 @@ function qdrantToJob(r) {
       compliance_score: r.compliance_score,
       compliance_summary: r.compliance_summary,
       recommendation: r.recommendation,
-    },
+    }],
   };
 }
 
@@ -565,7 +565,15 @@ async function loadJobs() {
     const r = await fetch(`${API}/api/reports?limit=30`);
     if (!r.ok) return;
     const data = await r.json();
-    const qdrantJobs = (data.reports || []).map(qdrantToJob);
+    // deduplicate: one sidebar row per job_id (latest analysis wins)
+    const byJobId = new Map();
+    for (const r of data.reports || []) {
+      if (!byJobId.has(r.job_id) ||
+          new Date(r.created_at) > new Date(byJobId.get(r.job_id).created_at)) {
+        byJobId.set(r.job_id, r);
+      }
+    }
+    const qdrantJobs = Array.from(byJobId.values()).map(qdrantToJob);
 
     // drop from pendingJobs anything that has landed in Qdrant
     const qdrantIds = new Set(qdrantJobs.map(j => j.job_id));
@@ -604,7 +612,28 @@ async function fetchReport(id) {
   try {
     const r = await fetch(`${API}/api/reports/${id}`);
     if (!r.ok) return null;
-    return qdrantToJob(await r.json());
+    const data = await r.json();
+    const analyses = data.analyses || [];
+    if (!analyses.length) return null;
+    const latest = analyses[analyses.length - 1];
+    return {
+      job_id: latest.job_id,
+      status: 'completed',
+      agent_name: latest.agent_name,
+      created_at: analyses[0].created_at,  // job's first analysis date
+      violations_found: latest.violations_found,
+      category: latest.category,
+      report: analyses.map(a => ({
+        job_id: a.job_id,
+        category: a.category,
+        violations_found: a.violations_found,
+        violations: a.violations || [],
+        compliance_score: a.compliance_score,
+        compliance_summary: a.compliance_summary,
+        recommendation: a.recommendation,
+        created_at: a.created_at,
+      })),
+    };
   } catch { return null; }
 }
 
@@ -658,7 +687,9 @@ function renderReport(job) {
     return;
   }
 
-  const r = job.report || {};
+  // report is a list of analyses; show latest, older ones in history
+  const allReports = Array.isArray(job.report) ? job.report : (job.report ? [job.report] : []);
+  const r = allReports.length ? allReports[allReports.length - 1] : {};
   const score = r.compliance_score ?? 0;
   const hasViolations = r.violations_found;
   const violations = r.violations || [];
@@ -736,6 +767,24 @@ function renderReport(job) {
         <p class="rec-text">${r.recommendation || '—'}</p>
       </div>
     </div>
+
+    ${allReports.length > 1 ? `
+    <div class="section">
+      <div class="section-title">Previous Analyses (${allReports.length - 1})</div>
+      <div class="section-body">
+        ${[...allReports].reverse().slice(1).map((pr, i) => {
+          const ps = pr.compliance_score ?? 0;
+          const pc = ps >= 80 ? '#22c55e' : ps >= 50 ? '#f59e0b' : '#ef4444';
+          return `<div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <span style="font-size:12px;color:var(--muted);">Analysis #${allReports.length - 1 - i} &nbsp;·&nbsp; ${pr.created_at ? timeAgo(pr.created_at) : ''}</span>
+              <span style="font-size:13px;font-weight:700;color:${pc}">${ps}/100</span>
+            </div>
+            <p style="font-size:13px;color:var(--text);line-height:1.5;">${pr.compliance_summary || '—'}</p>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : ''}
   `;
 }
 

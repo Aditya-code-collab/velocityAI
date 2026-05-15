@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from database import create_job, get_job, init_db, list_jobs
+from database import create_job, get_job, get_job_by_caller_id, init_db, list_jobs, update_job
 from qdrant_helper import delete_report, get_report, list_reports
 
 app = FastAPI(
@@ -50,7 +50,7 @@ class JobResponse(BaseModel):
     status: str
     category: Optional[str] = None
     violations_found: bool = False
-    report: Optional[dict] = None
+    report: Optional[list] = None   # list of per-analysis report dicts, newest last
     error: Optional[str] = None
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
@@ -62,7 +62,9 @@ def _row_to_response(row: dict) -> JobResponse:
     report = None
     if row.get("report"):
         try:
-            report = json.loads(row["report"])
+            parsed = json.loads(row["report"])
+            # normalise: old jobs stored a single dict; new ones store a list
+            report = parsed if isinstance(parsed, list) else [parsed]
         except Exception:
             pass
     return JobResponse(
@@ -89,6 +91,19 @@ def submit_transcription(req: TranscriptionRequest):
     """Queue a call transcription for compliance analysis."""
     if not req.transcription.strip():
         raise HTTPException(status_code=400, detail="transcription cannot be empty")
+
+    # reuse existing job_id when caller_id matches a previous job
+    if req.caller_id:
+        existing = get_job_by_caller_id(req.caller_id)
+        if existing:
+            update_job(
+                existing["id"],
+                transcription=req.transcription,
+                agent_name=req.agent_name or existing.get("agent_name"),
+                status="pending",
+                error=None,
+            )
+            return JobResponse(job_id=existing["id"], status="pending")
 
     job_id = str(uuid.uuid4())
     create_job(
@@ -129,14 +144,14 @@ def list_stored_reports(limit: int = 20, offset: str | None = None):
 
 @app.get("/api/reports/{job_id}")
 def get_stored_report(job_id: str):
-    """Fetch a single compliance report from Qdrant by job_id."""
+    """Fetch all compliance analyses for a job_id from Qdrant (oldest first)."""
     try:
-        record = get_report(job_id)
+        analyses = get_report(job_id)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Qdrant error: {e}")
-    if record is None:
-        raise HTTPException(status_code=404, detail="Report not found in Qdrant")
-    return record
+    if not analyses:
+        raise HTTPException(status_code=404, detail="No reports found for this job in Qdrant")
+    return {"job_id": job_id, "analyses": analyses}
 
 
 @app.delete("/api/reports/{job_id}", status_code=204)

@@ -125,29 +125,35 @@ def list_reports(limit: int = 20, offset: str | None = None) -> tuple[list[dict]
     r = _http_client().post(f"/collections/{REPORTS_COLLECTION}/points/scroll", json=body)
     r.raise_for_status()
     result = r.json()["result"]
-    points = [p["payload"] for p in result.get("points", [])]
+    points = sorted(
+        [p["payload"] for p in result.get("points", [])],
+        key=lambda p: p.get("created_at", ""),
+        reverse=True,
+    )
     next_offset = result.get("next_page_offset")
     return points, next_offset
 
 
-def get_report(job_id: str) -> dict | None:
-    """Fetch a single report point by job_id (UUID)."""
-    r = _http_client().post(
-        f"/collections/{REPORTS_COLLECTION}/points",
-        json={"ids": [job_id], "with_payload": True, "with_vector": False},
-    )
+def get_report(job_id: str) -> list[dict]:
+    """Fetch all analysis points for a job_id, sorted oldest-first."""
+    body = {
+        "limit": 100,
+        "with_payload": True,
+        "with_vector": False,
+        "filter": {"must": [{"key": "job_id", "match": {"value": job_id}}]},
+    }
+    r = _http_client().post(f"/collections/{REPORTS_COLLECTION}/points/scroll", json=body)
     r.raise_for_status()
-    points = r.json()["result"]
-    if not points:
-        return None
-    return points[0]["payload"]
+    points = r.json()["result"].get("points", [])
+    payloads = [p["payload"] for p in points]
+    return sorted(payloads, key=lambda p: p.get("created_at", ""))
 
 
 def delete_report(job_id: str):
-    """Delete a report point from Qdrant by job_id (UUID)."""
+    """Delete all analysis points for a job_id from Qdrant."""
     r = _http_client().post(
         f"/collections/{REPORTS_COLLECTION}/points/delete",
-        json={"points": [job_id]},
+        json={"filter": {"must": [{"key": "job_id", "match": {"value": job_id}}]}},
     )
     r.raise_for_status()
 
@@ -166,20 +172,26 @@ def ensure_reports_collection():
 
 
 def store_report(job: dict, report: dict):
-    """Embed the compliance summary and persist the full report to Qdrant."""
+    """Embed and persist a single compliance analysis as a new Qdrant point.
+
+    Each call creates a distinct point (analysis_id UUID) so the full history
+    for a caller_id is preserved. job_id and caller_id are stored in the
+    payload for filtering.
+    """
+    from datetime import datetime
     summary = report.get("compliance_summary", "")
     recommendation = report.get("recommendation", "")
     embed_text = f"{summary} {recommendation}".strip() or report.get("category", "compliance report")
     vector = embed(embed_text)
 
     point = {
-        "id": job["id"],   # already a UUID string
+        "id": str(uuid.uuid4()),   # unique per analysis — never overwrites
         "vector": vector,
         "payload": {
             "job_id": job["id"],
             "agent_name": job.get("agent_name"),
             "caller_id": job.get("caller_id"),
-            "created_at": job.get("created_at"),
+            "created_at": datetime.utcnow().isoformat(),
             "category": report.get("category"),
             "violations_found": bool(report.get("violations_found", False)),
             "compliance_score": report.get("compliance_score"),

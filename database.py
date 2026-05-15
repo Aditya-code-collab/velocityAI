@@ -70,6 +70,17 @@ def update_job(job_id: str, **kwargs):
     conn.close()
 
 
+def get_job_by_caller_id(caller_id: str) -> dict | None:
+    """Return the most recent job for a given caller_id, or None."""
+    conn = get_conn()
+    row = conn.execute(
+        "SELECT * FROM jobs WHERE caller_id=? ORDER BY created_at DESC LIMIT 1",
+        (caller_id,),
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
 def claim_next_pending() -> dict | None:
     """Atomically mark the oldest pending job as processing and return it."""
     conn = get_conn()
