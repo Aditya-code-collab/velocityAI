@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from database import create_job, get_job, init_db, list_jobs
+from qdrant_helper import delete_report, get_report, list_reports
 
 app = FastAPI(
     title="VelocityAI SOP Compliance Checker",
@@ -112,3 +113,36 @@ def get_job_status(job_id: str):
 def list_recent_jobs(limit: int = 20):
     """List the most recent jobs (default 20)."""
     return [_row_to_response(r) for r in list_jobs(limit)]
+
+
+# ── Qdrant report store ───────────────────────────────────────────────────────
+
+@app.get("/api/reports")
+def list_stored_reports(limit: int = 20, offset: str | None = None):
+    """Return stored compliance reports from Qdrant (paginated)."""
+    try:
+        records, next_offset = list_reports(limit=limit, offset=offset)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Qdrant error: {e}")
+    return {"reports": records, "next_offset": next_offset}
+
+
+@app.get("/api/reports/{job_id}")
+def get_stored_report(job_id: str):
+    """Fetch a single compliance report from Qdrant by job_id."""
+    try:
+        record = get_report(job_id)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Qdrant error: {e}")
+    if record is None:
+        raise HTTPException(status_code=404, detail="Report not found in Qdrant")
+    return record
+
+
+@app.delete("/api/reports/{job_id}", status_code=204)
+def delete_stored_report(job_id: str):
+    """Delete a compliance report from Qdrant by job_id."""
+    try:
+        delete_report(job_id)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Qdrant error: {e}")

@@ -5,6 +5,7 @@ load_dotenv()
 
 QDRANT_URL = os.getenv("QDRANT_URL", "http://34.47.255.166:80")
 QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "indiamart_sops")
+REPORTS_COLLECTION = os.getenv("REPORTS_COLLECTION", "indiamart_reports")
 
 # LiteLLM proxy — same setup as buyleadagent
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")

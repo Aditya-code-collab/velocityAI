@@ -29,7 +29,8 @@ pip install -r requirements.txt
 .venv/bin/uvicorn main:app --host 0.0.0.0 --port 8001 --reload
 
 # Start worker (separate terminal — run only one at a time)
-.venv/bin/python3 worker.py
+.venv/bin/python3 worker.py > /tmp/worker.log 2>&1 &   # background with logs
+tail -f /tmp/worker.log                                  # follow logs
 
 # Smoke test
 curl -X POST http://localhost:8001/api/transcription \
@@ -39,6 +40,24 @@ curl -X POST http://localhost:8001/api/transcription \
 curl http://localhost:8001/api/jobs/<job_id>
 curl http://localhost:8001/api/jobs          # list recent 20 jobs
 curl http://localhost:8001/health            # liveness probe
+
+# Qdrant report store
+curl http://localhost:8001/api/reports                  # list all stored reports (paginated)
+curl http://localhost:8001/api/reports/<job_id>         # fetch single report by job UUID
+curl -X DELETE http://localhost:8001/api/reports/<job_id>  # delete report from Qdrant
+
+# Backfill a completed SQLite job that is missing from Qdrant
+.venv/bin/python3 -c "
+import json
+from database import get_job
+from qdrant_helper import store_report
+job = get_job('<job_id>')
+store_report(job, json.loads(job['report']))
+print('done')
+"
+
+# Check for stale/duplicate worker processes (only one should run)
+ps aux | grep "python3 worker" | grep -v grep
 ```
 
 ## Architecture
@@ -66,15 +85,20 @@ POST /api/transcription
         └─ outputs JSON between COMPLIANCE_REPORT_START / COMPLIANCE_REPORT_END markers
         │
         ▼
-  worker.py parses report → saves to SQLite
+  worker.py parses report → saves to SQLite + stores in Qdrant (indiamart_reports)
         │
         ▼
-GET /api/jobs/{job_id}  → report + violations + compliance_score
+GET /api/jobs/{job_id}        → report + violations + compliance_score  (from SQLite)
+GET /api/reports              → paginated list of all reports            (from Qdrant)
+GET /api/reports/{job_id}     → single report by job UUID               (from Qdrant)
+DELETE /api/reports/{job_id}  → remove a report                         (from Qdrant)
 ```
 
-**Important:** Only run one worker at a time. `claim_next_pending()` in `database.py` uses a read-then-update pattern that is not safe for concurrent workers under SQLite.
+**Important:** Only run one worker at a time. `claim_next_pending()` in `database.py` uses a read-then-update pattern that is not safe for concurrent workers under SQLite. Running `start.sh` when the server port is already in use will exit the script but leave a zombie worker process in the background — always check `ps aux | grep "python3 worker"` before starting a new one.
 
 ## Qdrant — Store and Fetch
+
+### Collection: `indiamart_sops`
 
 Each SOP is one Qdrant point:
 
@@ -90,6 +114,28 @@ payload fields:
   rules        string[] enforceable rule strings (7–9 per SOP)
   keywords     string[] stored but not used in search
 ```
+
+### Collection: `indiamart_reports`
+
+Each completed job is persisted here after worker saves to SQLite. Point ID = job UUID.
+
+```
+vector  = embed(compliance_summary + " " + recommendation)   ← 1536-dim float array
+
+payload fields:
+  job_id              string   UUID of the job
+  agent_name          string   name of the agent who made the call
+  caller_id           string   caller identifier (optional)
+  created_at          string   ISO-8601 timestamp
+  category            string   matched SOP category
+  violations_found    bool     true if any violations detected
+  compliance_score    int      0–100
+  violations          object[] list of {rule, description, evidence}
+  compliance_summary  string   narrative summary of the compliance result
+  recommendation      string   remediation advice
+```
+
+Created automatically by `ensure_reports_collection()` called at worker startup. Qdrant write failure is non-fatal — the SQLite record is always saved first.
 
 ### Two-stage matching
 
@@ -146,11 +192,11 @@ To add a new section to the report, update both `agent_prompt.py` (add the field
 |------|------|
 | `run.md` | Step-by-step guide for setting up and running the app |
 | `start.sh` | One-command script to start the API server and worker together |
-| `main.py` | FastAPI app — `POST /api/transcription`, `GET /api/jobs/{id}`, `GET /api/jobs`, `GET /health`, `GET /` (serves UI) |
+| `main.py` | FastAPI app — `POST /api/transcription`, `GET /api/jobs/{id}`, `GET /api/jobs`, `GET /health`, `GET /api/reports`, `GET /api/reports/{id}`, `DELETE /api/reports/{id}`, `GET /` (serves UI) |
 | `static/index.html` | Single-file SPA — submit form, live polling, report renderer |
 | `worker.py` | Polls SQLite every 5s, spawns `claude --print` subprocess per job |
 | `agent_prompt.py` | Builds the full compliance analysis prompt |
-| `qdrant_helper.py` | Raw `httpx` REST calls to Qdrant + OpenAI embeddings via LiteLLM proxy |
+| `qdrant_helper.py` | Raw `httpx` REST calls to Qdrant + OpenAI embeddings via LiteLLM proxy; functions: `search_sops`, `upsert_sop`, `store_report`, `get_report`, `list_reports`, `delete_report`, `ensure_collection`, `ensure_reports_collection` |
 | `database.py` | SQLite helpers — `init_db`, `create_job`, `claim_next_pending`, `update_job`, `get_job`, `list_jobs` |
 | `email_helper.py` | CLI-callable SMTP sender: `python3 email_helper.py --to --subject --body` |
 | `setup_sops.py` | One-time seed — upserts 5 IndiaMart SOPs into Qdrant |
@@ -160,7 +206,7 @@ To add a new section to the report, update both `agent_prompt.py` (add the field
 
 | Service | URL | Purpose |
 |---------|-----|---------|
-| Qdrant | `http://34.47.255.166:80` | Vector store (collection: `indiamart_sops`) |
+| Qdrant | `http://34.47.255.166:80` | Vector store (collections: `indiamart_sops`, `indiamart_reports`) |
 | LiteLLM proxy | `https://imllm.intermesh.net/v1` | Embeddings (`openai/text-embedding-3-large`, 1536-dim) |
 | Gmail SMTP | `smtp.gmail.com:587` | Violation email alerts |
 
@@ -185,6 +231,7 @@ To add a new section to the report, update both `agent_prompt.py` (add the field
 ```
 QDRANT_URL=http://34.47.255.166:80
 QDRANT_COLLECTION=indiamart_sops
+REPORTS_COLLECTION=indiamart_reports  # optional, default shown
 OPENAI_API_KEY=<LiteLLM key>
 OPENAI_API_BASE=https://imllm.intermesh.net/v1
 EMBEDDING_MODEL=openai/text-embedding-3-large
@@ -206,3 +253,6 @@ CLAUDE_BIN=claude                # optional, path to claude binary
 - Qdrant must be addressed as `http://34.47.255.166:80` (explicit port 80) — omitting it causes the client to append `:6333`.
 - Email requires a Gmail **App Password**: Google Account → Security → 2-Step Verification → App passwords.
 - To re-seed SOPs: `curl -X DELETE http://34.47.255.166:80/collections/indiamart_sops` then `python3 setup_sops.py`.
+- Jobs completed before `store_report()` was added (or processed by a stale worker) will exist in SQLite but not in Qdrant — backfill them manually using the snippet in the Commands section above.
+- Worker logs are essential for debugging Qdrant write failures — always start the worker with `> /tmp/worker.log 2>&1` rather than via `start.sh` when troubleshooting.
+- `start.sh` is convenient but pipes worker output through `sed` to a terminal that may not persist; prefer the manual start for production or debugging.

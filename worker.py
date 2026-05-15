@@ -13,7 +13,7 @@ import time
 from agent_prompt import build_prompt
 from config import PROJECT_DIR, WORKER_POLL_INTERVAL
 from database import claim_next_pending, init_db, update_job
-from qdrant_helper import search_sops
+from qdrant_helper import ensure_reports_collection, search_sops, store_report
 
 logging.basicConfig(
     level=logging.INFO,
@@ -93,6 +93,13 @@ def process_job(job: dict):
             report=json.dumps(report),
             violations_found=int(violations_found),
         )
+
+        try:
+            store_report(job, report)
+            log.info("Report %s stored in Qdrant", job_id)
+        except Exception as qdrant_exc:
+            log.warning("Could not store report in Qdrant: %s", qdrant_exc)
+
         log.info(
             "Job %s done — category=%s violations=%s score=%s",
             job_id,
@@ -108,6 +115,7 @@ def process_job(job: dict):
 
 def main():
     init_db()
+    ensure_reports_collection()
     log.info("Worker started (poll interval: %ds)", WORKER_POLL_INTERVAL)
     while True:
         job = claim_next_pending()

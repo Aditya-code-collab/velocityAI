@@ -6,7 +6,7 @@ import uuid
 import httpx
 from openai import OpenAI
 from config import (
-    QDRANT_URL, QDRANT_COLLECTION,
+    QDRANT_URL, QDRANT_COLLECTION, REPORTS_COLLECTION,
     EMBEDDING_MODEL, EMBEDDING_DIM,
     OPENAI_API_KEY, OPENAI_API_BASE,
 )
@@ -104,3 +104,81 @@ def search_sops(transcription: str, top_k: int = 3) -> list[dict]:
         }
         results.append(entry)
     return results
+
+
+def list_reports(limit: int = 20, offset: str | None = None) -> tuple[list[dict], str | None]:
+    """Scroll through stored reports. Returns (records, next_offset)."""
+    body: dict = {"limit": limit, "with_payload": True, "with_vector": False}
+    if offset:
+        body["offset"] = offset
+    r = _http_client().post(f"/collections/{REPORTS_COLLECTION}/points/scroll", json=body)
+    r.raise_for_status()
+    result = r.json()["result"]
+    points = [p["payload"] for p in result.get("points", [])]
+    next_offset = result.get("next_page_offset")
+    return points, next_offset
+
+
+def get_report(job_id: str) -> dict | None:
+    """Fetch a single report point by job_id (UUID)."""
+    r = _http_client().post(
+        f"/collections/{REPORTS_COLLECTION}/points",
+        json={"ids": [job_id], "with_payload": True, "with_vector": False},
+    )
+    r.raise_for_status()
+    points = r.json()["result"]
+    if not points:
+        return None
+    return points[0]["payload"]
+
+
+def delete_report(job_id: str):
+    """Delete a report point from Qdrant by job_id (UUID)."""
+    r = _http_client().post(
+        f"/collections/{REPORTS_COLLECTION}/points/delete",
+        json={"points": [job_id]},
+    )
+    r.raise_for_status()
+
+
+def ensure_reports_collection():
+    r = _http_client().get("/collections")
+    r.raise_for_status()
+    existing = [c["name"] for c in r.json()["result"]["collections"]]
+    if REPORTS_COLLECTION not in existing:
+        payload = {"vectors": {"size": EMBEDDING_DIM, "distance": "Cosine"}}
+        r2 = _http_client().put(f"/collections/{REPORTS_COLLECTION}", json=payload)
+        r2.raise_for_status()
+        print(f"Created collection: {REPORTS_COLLECTION}")
+    else:
+        print(f"Collection '{REPORTS_COLLECTION}' already exists")
+
+
+def store_report(job: dict, report: dict):
+    """Embed the compliance summary and persist the full report to Qdrant."""
+    summary = report.get("compliance_summary", "")
+    recommendation = report.get("recommendation", "")
+    embed_text = f"{summary} {recommendation}".strip() or report.get("category", "compliance report")
+    vector = embed(embed_text)
+
+    point = {
+        "id": job["id"],   # already a UUID string
+        "vector": vector,
+        "payload": {
+            "job_id": job["id"],
+            "agent_name": job.get("agent_name"),
+            "caller_id": job.get("caller_id"),
+            "created_at": job.get("created_at"),
+            "category": report.get("category"),
+            "violations_found": bool(report.get("violations_found", False)),
+            "compliance_score": report.get("compliance_score"),
+            "violations": report.get("violations", []),
+            "compliance_summary": summary,
+            "recommendation": recommendation,
+        },
+    }
+    r = _http_client().put(
+        f"/collections/{REPORTS_COLLECTION}/points",
+        json={"points": [point]},
+    )
+    r.raise_for_status()
