@@ -1,0 +1,3 @@
+# Benefits of becoming a Verified Supplier on IndiaMART
+
+Verified suppliers are suppliers whose email, company name & contact details are verified via a verification call by IndiaMART employees.Benefits:More visibility – higher listing on IndiamartDue to more visibility, the supplier will get more buyer enquiriesThe supplier will receive more buyer requirements through IndiaMARTPNS (Preferred number service) facility – All the numbers which you have added in PNS settings will ring simultaneously to make sure you don’t miss out on buyer callsVerified Supplier tag creates a sense of trust among buyersSpam call controlling

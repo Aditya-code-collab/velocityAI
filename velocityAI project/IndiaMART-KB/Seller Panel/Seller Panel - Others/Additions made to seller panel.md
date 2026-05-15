@@ -1,0 +1,3 @@
+# Additions made to seller panel
+
+1. Dynamic screen sizeIts always been a debatable question that what exact the width of contact list to conversation area should be. After benchmarking various portals the ratio of width was 35:65 (we keep this as default width ratio)Going a step ahead we have provided power in hands of users to change the width as per their screensize and requirement.Benefit: After certain width the product name will shift on top line hence, we save one line, leading to 2 more contacts displayed in the list(depending on screen size)Note: on reload of page the default size will come again.

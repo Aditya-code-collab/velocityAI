@@ -1,0 +1,3 @@
+# Pre-requisites for TDS entry (TDS Reconciliation bucket)
+
+Cases wherein valid document i.e. TDS Certificate is available it should be attached along with the ticket, then the TDS Reconciliation team will make the entry if required. (In case of the entry already made- Duplicate entries can not be made).Cases wherein valid document i.e. TDS certificate is not available nor not attached to the ticket, then the sales/CC team is supposed to make TDS entry which will only be validated by the Finance team and further action to be taken accordingly.Path to raise the internal ticket:Open the STS >> STS update >> Open ticket >> Customer Oriented Internal Queries >> Select TDS Reconciliation

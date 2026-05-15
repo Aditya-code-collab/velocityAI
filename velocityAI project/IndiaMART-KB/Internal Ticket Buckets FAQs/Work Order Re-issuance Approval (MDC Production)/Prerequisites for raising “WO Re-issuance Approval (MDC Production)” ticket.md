@@ -1,0 +1,3 @@
+# Prerequisites for raising “WO Re-issuance Approval (MDC Production)” ticket
+
+Mentioned below are the pre-requisites to raise an internal ticket under “WO Re-issuance Approval (MDC Production)" bucket:Cases wherein Production is marked as cancelled, confirmation from the production team is to be provided.Cases wherein proforma is cancelled, new online Proforma is to be created by the requesterFor complimentary services, online proforma is to be created by the requester and pre-approval from the authorized persons is to be provided.For free of cost extensions proforma is not required, cases to be approved by authorized persons.

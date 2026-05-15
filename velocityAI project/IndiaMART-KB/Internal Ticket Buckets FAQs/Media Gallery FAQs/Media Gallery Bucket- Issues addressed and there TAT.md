@@ -1,0 +1,3 @@
+# Media Gallery Bucket: Issues addressed and there TAT
+
+Issues/Concerns handled by “Media Gallery” Bucket:1. Customer Video Addition/Deletion2. IndiaMART Profile Video Production/Addition/Deletion3. Brochure Addition/Deletion4. PPT Addition/DeletionNote: Any technical issues, even though they are related to above-mentioned drivers will not be handled by the Media Gallery Team.TAT: Issue closure TAT for all above-mentioned call drivers are “24 working hours”LS/SS tickets will be closed within 4 working hours from issue time.Tickets raised post 4 PM will be entertained/acknowledged the next day.Ticket cases get picked as per ticket open date (FIFO)Escalation Matrix:Click here to view the concerned person name

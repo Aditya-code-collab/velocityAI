@@ -1,0 +1,3 @@
+# ECS Expiring on March 31, 2020/ ECS Client for NACH conversion
+
+ESC service will be stopped by 31st March. Hence an email communication has been sent to ECS clients to convert the ECS to monthly/ annual mode.Email Communication :Dear Customer,Greetings from IndiaMART! We wish to inform you that your ECS (monthly payment) valid till March'2020. The last ECS will hit in the month of March'2020 as per your scheduled service end date.  We request you to convert your ECS service to monthly NACH or Annual mode at the earliest to avail uninterrupted services from IndiaMART.com Your IndiaMART account manager will get in touch with you shortly for further assistance. Warm Regards,Team IndiaMART

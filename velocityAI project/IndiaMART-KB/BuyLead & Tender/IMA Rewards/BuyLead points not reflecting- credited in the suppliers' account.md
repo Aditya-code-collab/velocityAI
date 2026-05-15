@@ -1,0 +1,3 @@
+# BuyLead points not reflecting/ credited in the suppliers' account
+
+It is an automated process hence the BuyLeads get automatically credited to the supplier's account. If the BuyLead points are not credited in Suppliers account then following things need to be checked -Check whether the payment is reflecting in the ledger or not as once the payment is reflected the BuyLeads are auto credited in the suppliers' accountServicing team:If the payment is not reflecting in the suppliers account then need to mail pay@indiamart.comCustomer care team:Initiate a ticketPlease Note: If the user has NA cust type then the payment will not be tagged as this is a buyers accountCrone runs at 9 AM,2 PM,9 PM automatically for BuyLead allocation.

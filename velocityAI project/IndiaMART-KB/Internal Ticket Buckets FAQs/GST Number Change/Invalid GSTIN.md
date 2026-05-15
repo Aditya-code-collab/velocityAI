@@ -1,0 +1,3 @@
+# Invalid GSTIN
+
+Troubleshooting Steps :Client may be updating wrong GST. Kindly crosscheck GST from GST Certificate provided by client or search GST by his PAN from below website -https://services.gst.gov.in/services/searchtpbypan   State updated on STS and the GST certificate state mismatches then also it will show an error. It should be same.Refresh the page and again try to updateServicing :If still the error is shown while updating the GST then attach the GST certificate in STS and loop Mohit chopra (mohit.chopra@indiamart.com)Customer Care:If still the error is shown while updating the GST then initiate a ticket

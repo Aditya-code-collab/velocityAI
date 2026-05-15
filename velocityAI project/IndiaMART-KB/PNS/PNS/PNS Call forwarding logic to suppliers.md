@@ -1,0 +1,3 @@
+# PNS Call forwarding logic to suppliers
+
+We have modified the PNS call forwarding logic at our end. The new call forwarding logic is based on stated Location Preference of the customer instead of Deduced Location with below conditions:All foreign caller calls will be forwarded to customer irrespective of Location preferenceFor Indian caller calls, if the stated LP is India /Local/Global, all calls will be forwarded to the supplierAny exporter who does not want calls from India should select foreign only location preference, in that case, the calls from Indian callers will not be forwarded to himSummarizing the new change in the grid:

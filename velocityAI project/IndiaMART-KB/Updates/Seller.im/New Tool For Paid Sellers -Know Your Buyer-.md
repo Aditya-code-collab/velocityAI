@@ -1,0 +1,3 @@
+# New Tool For Paid Sellers "Know Your Buyer"
+
+We have come up with a new tool called " Know Your Buyer"Objective:To provide IM Paid sellers with background information of their buyers (like Mobile, Email, Product of Interest, Website, GST etc..) which is available on IndiaMART DB.What is it?This tool works by finding the user profile of any of the seller's desired contacts which is available in IndiaMART's database, and upon spending 1 BuyLead balance, can be unlocked by the seller if they wish to do so.How does it Work?This screen, which is currently available only on the Seller desktop, can be quickly accessed by catalog sellers through the BuyLead section:

@@ -1,0 +1,3 @@
+# Non-Contactable Ticket SOP
+
+Follow up process -Target: Call the client twice a day (Prefer 1 morning and 1 evening call), to be followed for 3 Working DaysCall on primary number first (Followed by Secondary Number - In case not contactable on Primary)If a client asks to call later/specified time - Set TBRO for the same & ensure adherenceWritten Communication -Mail/SMS after every set of attempt, stating - Purpose / Expectation from Sellers endIn case seller stands not responding for 3 working days - Ticket to be closed under " Client not responding " dispositionEnsure adherence of above SOP for 3 days before the closure

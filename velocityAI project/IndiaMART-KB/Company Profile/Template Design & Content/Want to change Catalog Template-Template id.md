@@ -1,0 +1,3 @@
+# Want to change Catalog Template/Template id
+
+Check the services which the client has taken from IndiaMART:MDC:Inform the client that the layout remains the default for all MDC clients. A catalog template change option only exists for suppliers availing Maximizer or above services.Check if the client is interested in availing higher package (Inform FABs i.e. Higher Listing, More Enquiries, Own Domain, Corporate Emails etc.)Maximizer and above:Ask the client to check available templates on "showroom.indiamart.com" and share the template ID.Change the template from WebERP:     (Search Company >> STS Tab >> CS tab)

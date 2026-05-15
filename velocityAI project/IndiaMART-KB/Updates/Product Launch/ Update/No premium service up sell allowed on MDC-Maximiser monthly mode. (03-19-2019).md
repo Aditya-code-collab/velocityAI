@@ -1,0 +1,3 @@
+# No premium service up sell allowed on MDC/Maximiser monthly mode. (03/19/2019)
+
+This is to inform you that if base service (i.e. MDC & Maximiser) is running on monthly mode then we cannot go for up sell of premium service (i.e. Star, Leader, FL, IL) on Annual/MYR mode. If customer is interested in premium service we need to upgrade the base service from monthly to Annual/MYR mode along with Premium Service.Note: If base service and premium listing services are running on annual mode and at the time of renewal of base service client wants to go for monthly mode for base service then we cannot process same.

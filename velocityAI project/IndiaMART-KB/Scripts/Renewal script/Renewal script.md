@@ -1,0 +1,3 @@
+# Renewal script
+
+Good Morning Mr./Ms.<Name>! I am <Name>, your account manager from IndiaMART. How are you doing?                  - Wait for the customer responseIs this the right time to talk to you? - Wait for the customer responseThank you Sir. This call is being made to take your feedback on the service and will be recorded for training and feedback purpose. -Wait for the customer responseSir, You have been associated with us since <Date> and i wanted to inform that you would have received the invoice of your service renewal which is due now. -- Listen to the customer & accordingly revertSir, so when will you renew your services? -- Listen to the customer & accordingly revert

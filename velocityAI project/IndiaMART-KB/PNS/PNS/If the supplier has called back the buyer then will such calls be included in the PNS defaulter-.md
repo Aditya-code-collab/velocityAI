@@ -1,0 +1,3 @@
+# If the supplier has called back the buyer then will such calls be included in the PNS defaulter?
+
+Current Process:If a supplier missed a PNS call and due to any reason does not pick up the call, the call is considered as a failed PNS call. Later on, If the supplier callback the buyer, this failed call is still counted to mark the supplier as PNS defaulter.What has been done now:If within the same day there is a call back by supplier on the same GLID on which the call is missed then such calls will be excluded from the defaulter marking process calls count.If there are multiple missed calls from the same buyer, and single callback within the same day then, only that failed call will be removed which has a timestamp less than that of call back.

@@ -1,0 +1,3 @@
+# Concept of BuyLead Titles in Search and DIR Search
+
+We all know about the concept of Virtual Products in Search :Virtual Products are being created only for D rank MCATs and For all the BuyLeads consumed in a D rank MCAT, there was only one virtual product being created in Search whose name was D Rank MCAT's NameThis is an enhancement over the concept of virtual product and now each BuyLead Title consumed would not be aggregated to MCAT level but we would be creating one product for each BuyLead consumed.Secondly, the virtual product was limited to only D rank but this new BuyLead title product can be created in A/B rank MCATs also.

@@ -1,0 +1,3 @@
+# How to call the client through C2C?
+
+WebERPFollow the below steps in WebERP to call the client:Click ‘C2C’ ButtonSelect or enter the client’s contact numberPress ‘OK’ to CallYou receive a call from DID number assigned to youYou pick the call -> Call connects to the clientThe client receives a call from DID number assigned to youClient picks the call -> You both get connectedSTS / C2C history updated on-call disposeMobile AppOpen the company dashboardClick on C2CChoose the number, else, select ‘Others’ and manually enter the number you wish to callConfirmation message will be shown and the user will receive a call.Only after the user answers the call, the C2C call to the client will be initiated.

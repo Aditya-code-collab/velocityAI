@@ -1,0 +1,3 @@
+# Changes not visible in catalog
+
+Hard Refresh (Ctrl + F5)  the pageIf you are checking the details on the search page of catalog then the changes might not be reflected immediately. Generally, it takes 24 - 48 hours to reflect the same on the catalog.For example :This is the clients' catalog - https://www.indiamart.com/paqeepackaging/You have made the changes just now in the product. Then the changes will not reflect in the search page of catalog i.e. when you try to check the product changes through the search bar.The link will be similar to -https://www.indiamart.com/paqeepackaging/search.html?ss=Vacuum+Packaging+Machine

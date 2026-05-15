@@ -1,0 +1,3 @@
+# IndiaMART GST, PAN and SAC number
+
+GSTIN Number: 09AAACI5853L2Z5PAN Number: AAACI5853LSAC code: 998365

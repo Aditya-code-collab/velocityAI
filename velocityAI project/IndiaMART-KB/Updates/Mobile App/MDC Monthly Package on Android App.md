@@ -1,0 +1,3 @@
+# MDC Monthly Package on Android App
+
+Now we have MDC Monthly option on the subscription screen along with the MDC Annual package.A comparison-based selection interface has been added so that the client can select the service of his choice.Flow:A Free User lands on the Subscription screen with default selected Yearly mode. S/He clicks on Monthly Mode to select the same and clicks on Buy Now.On click of Buy Now, the user lands on pay.im screen in webview to enter the account details.After the addition of the details, basis the successful/failed NACH registration, the message popup to display the status is shown to the user

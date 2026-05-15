@@ -1,0 +1,3 @@
+# Upsell Script for Value + clients
+
+Good Morning Mr./Ms <Name>. I am <Name> your account manager from IndiaMART. How are you doing?                                - Wait for the customer responseIs this the right time to talk to you? If the customer says: Yes- Thank you, Sir. This call is being made to take your feedback on the service and will be recorded for training and quality purpose.- Wait for the customer responseSir, you have been associated with IndiaMART since <insert date>. How has your overall experience been on our platform?                  -Wait for the customer response If the client says -

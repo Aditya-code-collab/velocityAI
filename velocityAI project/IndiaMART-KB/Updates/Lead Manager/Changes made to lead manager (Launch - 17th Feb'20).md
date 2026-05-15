@@ -1,0 +1,3 @@
+# Changes made to lead manager (Launch - 17th Feb'20)
+
+Following changes are made recently in the LMS (Lead Manager) section-Contacts added before 1-Jan-2019 & not having any conversation in 2019/2020 will not be displayed in the main Contact List of LMS.With this change count of contacts visible in Lead Manager (All Leads count) will be reduced but the data is still available in "LMS Desktop" under 2018 Filter where customer can do all the activities like "Reply / Reminder & Note addition"New Implementation:Now date filter works on last activity date and leads are sorted on the basis of last activity date (i.e. on applying 2018 filter all those leads in which last communication date is between '01-Jan-2018' and '31-Dec-2018' will be displayed).

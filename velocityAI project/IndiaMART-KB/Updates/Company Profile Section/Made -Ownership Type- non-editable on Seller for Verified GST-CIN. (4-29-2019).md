@@ -1,0 +1,3 @@
+# Made "Ownership Type" non-editable on Seller for Verified GST/CIN. (4/29/2019)
+
+We have started to freeze the Ownership Type field value only if GST/CIN is user verified on Seller business profile section under Company Profile.Earlier we have only frozen the Company Name on Seller.IM, if GST/CIN is user verified.Purpose of this Change:Currently, the Ownership Type (Proprietorship/Partnership/Private Limited, etc.) is being filled manually. In many cases, we have found that there is "Ownership type" mismatch with the Government records. So we have decided to auto-fill the "Ownership Type" field of a company at the time of GST/CIN verification.

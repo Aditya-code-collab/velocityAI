@@ -1,0 +1,3 @@
+# How to enable the profile which was deactivated due to "Primary mobile number claimed by another user reason"
+
+Steps for ActivationConfirmation Email: The client provides the confirmation email from the existing primary mail id to update the primary mobile number.Required documents: GST certificate should be attached in the confirmation mail .Actions to be taken:Contact Center: Raise a ticket informing the client that we will contact them within 24-48 working hours. Kindly click here to view the prerequisites for raising a ticket.Servicing Team: Raise an internal ticket in the "Email/Mobile number change" bucket to get the changes done.

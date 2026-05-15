@@ -1,0 +1,3 @@
+# Client not able to edit Pin code, state & country from Seller Panel
+
+Now we are freezing the option to edit Pin code, State & Country in Company Profile section after GST is marked verified on Seller Panel.If the client wants to make changes in any of the above fields and the GST is verified then the changes will be done by IndiaMART. Applicable only when the state remains the same. To change address and Pincode other than GST address, we required the below Address proof i.e(1) Water Bill/Electricity bill/Rent agreement/shop registration certificate/MSME Certificate(2) Document with either company name or owner name

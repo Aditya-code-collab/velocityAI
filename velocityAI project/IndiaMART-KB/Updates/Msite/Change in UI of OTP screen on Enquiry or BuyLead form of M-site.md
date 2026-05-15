@@ -1,0 +1,3 @@
+# Change in UI of OTP screen on Enquiry or BuyLead form of M-site
+
+There were two problem statements that we had -Strong OTP messaging - As per the feedback received during the review we need to work upon the messaging of OTP screen so that we can pitch the user to fill the OTP and tell them why is it important for them to fill the OTP.  OTP input box compatibility issue -While testing our OTP screen we came across an issue over MI and One+ phones that user was not able to get back to the previous digit, their backspace was not compatible with our design.So we came up with the Design changes and Communication changes over OTP screen.Business Objective:Strong communication pitching more Verification and OTP input compatibility    Before:

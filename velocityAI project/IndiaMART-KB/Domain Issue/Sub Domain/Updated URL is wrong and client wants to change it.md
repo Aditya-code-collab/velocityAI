@@ -1,0 +1,3 @@
+# Updated URL is wrong and client wants to change it
+
+Discuss with the client that you want modification in existing URL/Want to create new URL:If in the existing URL:Check the availability of the URL which he wants.If available: Fill the proforma to change the URL.If not available: Ask him to share any new URL else you can continue with the current one.If want to create a new URL:Ask him to share the docs (Registration/GST) & Required URL (URL should be as per company name)Verify the details and Check the availability of the URL which he wants.If available: Fill the proforma to change the URL. If not available: Ask the client to share any new URL.

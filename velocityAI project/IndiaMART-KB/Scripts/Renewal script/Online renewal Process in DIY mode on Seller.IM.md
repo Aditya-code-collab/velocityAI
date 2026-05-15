@@ -1,0 +1,3 @@
+# Online renewal Process in DIY mode on Seller.IM
+
+Business Problem: Currently the renewal of any paid service was done via offline channels. There was no online process existing for renewal of any paid services on IM platform.What is a Renewal?Renewal is an extension of the end date of the existing service offered to the seller by IndiaMART. A paid supplier who has subscribed to any of our services (MDC and above), will be up for renewal in the following conditions:Scheduled Renewal: When the service expiry date is less than 90 days.After offline payment: Accounts team generates a renewal if the supplier has already paid the renewal amount via cheque to extend his service.Proposal creation through MERP.Current Offline Process:

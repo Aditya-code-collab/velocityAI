@@ -1,0 +1,3 @@
+# Lead Management System (LMS)
+
+LMS : Enquiry ReplyActivityReply to Buyers using IM’s Lead ManagerExpectationsGuide Sellers on Communicating with Buyers using IM’s LMSReply to at least 1 latest Enquiry or BL purchasedImpact/ImportanceEstablish Instant Connect with Buyers to enhance maturityMarket your IM’s Catalog or Share Quotations with prospective buyersDiscussion flow for enquiry replyLMS : Share Payment LinkActivityAt-least 1 Payment Link ExpectationsPayment Link – Education on how to collect online payments from the buyers via Pay with IndiaMARTImpact/ImportancePayment Link - Buy from sellers across India with our secure payment networkDiscussion flow for sharing payment link

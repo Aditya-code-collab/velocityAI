@@ -1,0 +1,3 @@
+# Refund Reasons
+
+Order Not Accepted Less Amount Less Advance Duration Issue Multiple Issues NACH Mandate Not Received Mis-Commitment Multiple Bounces Non-Contactable/Verification Pending Not Interested to Continue Profile/Negative Industry Proforma / Deal Issues App not installed Mandatory Docs not received Sales Pre Tagging Pending OthersProblem from Client Side Business ClosedQuery IssueService IssueOthersNACH RejectedOutstanding MaxiOthersExcess Amount NormalTDSMisselling /Miscommunication Miss-commitmentMisselling/MiscommunicationNon-Prospective Client Query Problem/ issuesNon-Moving WIP NACH RejectedProduction CancellationMandate Not ReceivedNot Interested to ContinueTEST Amount Production CancellationProduction CancellationMandatory Docs not received

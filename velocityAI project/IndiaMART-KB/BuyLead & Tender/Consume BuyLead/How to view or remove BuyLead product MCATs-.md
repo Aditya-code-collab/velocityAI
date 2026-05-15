@@ -1,0 +1,3 @@
+# How to view or remove BuyLead product MCATs?
+
+In order to further provide sellers the option to control their BuyLead recommendations and help them resolve concerns of getting leads of the products which they are not dealing in, we have now provided them the option to view and remove BL products by showing them the MCATs of those products and marking them negative.Sellers can now see an extended list of preferred categories "Based on your BuyLead consumption" which will now include MCATs of BL products.There is no demarcation between D rank MCATs and BL product MCATs as sellers would not need to distinguish between the two.Path: Seller panel >> Settings >> Buylead Preference >> Category Preference >> Based on your BuyLead consumption

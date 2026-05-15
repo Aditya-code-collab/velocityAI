@@ -1,0 +1,3 @@
+# Performance Report
+
+The performance report is very helpful to the seller as, through it, he can assess his performance effectively and make smart decisions.Path:Seller panel >> Lead Manager >> Reports >> Performance reportHere the client can view all the details related to enquiry, BuyLeads, PNS, follow up, payment collected etc.The seller can view the daily, weekly and monthly data.Recently, we have also added the option for 'My Reviews'.My Reviews Tab:Sellers can now track the monthly count of reviews received by buyers in the last 6 months in form of vertical bar graphEducational video for sellers who do not have any count of reviews received historically or in the past 6 monthsRead reviews CTA that will help sellers land on 'Your Rating & Review' page

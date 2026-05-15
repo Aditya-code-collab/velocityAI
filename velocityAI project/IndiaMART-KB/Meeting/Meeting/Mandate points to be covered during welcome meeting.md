@@ -1,0 +1,3 @@
+# Mandate points to be covered during welcome meeting
+
+Following points are mandated to be followed in the welcome call:Consume 3 BuyLeads and make calls to them (Click here if you want to know how to consume BuyLead)Reply to at-least 3 BuyersCreate Reminders and Update LMS for 3 Enquiries (Click here to view from where he can reply to the buyer)To call Supplier PNS to show IM Buyer & all Ringing Numbers IndiaMART Employees cannot call Supplier PNS100% Call Pickup for ROI-Pick up within 30 SecCheck if IM Buyer Numbers are Saved in the client mobile* As a part of the Welcome Meeting, it is mandate to call Supplier PNS to show IM Buyer & all Ringing Numbers

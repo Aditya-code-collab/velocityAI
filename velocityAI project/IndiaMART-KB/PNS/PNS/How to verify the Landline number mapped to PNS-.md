@@ -1,0 +1,3 @@
+# How to verify the Landline number mapped to PNS?
+
+The seller needs to follow the below path to verify the Landline number mapped in the PNS:Login to seller panelGo To SettingsClick on PNS SettingsClick on Add More NumbersAdd Landline numberClick on SaveA pop up will appear where the seller will be asked to give a missed call to +918181818181 within 2 minutes of the appearance of the pop up in order to verify the landline numberIf the missed call is placed within 2 minutes after clicking the Save Number CTA,  the landline number will be verified and then mapped to the PNS number of the Seller.IM

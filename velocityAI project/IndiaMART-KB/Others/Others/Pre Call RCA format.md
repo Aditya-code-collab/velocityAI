@@ -1,0 +1,3 @@
+# Pre Call RCA format
+
+Proposed Initial RCA:                                Format Remarks Ticket ID :Hosting Date: BL Count in 250 km: Product Count:                          Rejected Products: Nature of Business:Location Preference:App Engaged: IMA Status (NA for Welcome 1): Purchased BL Count (In last 2 Weeks):Enquiry Count (Post Hosting/Last 30 Days): PNS Call Count(Last 30): Last 30 days PNS Success %: Count of numbers mapped in PNS:PMCAT Available: C Rank MCATs: D Rank MCATs: Tickets in last 60 days (Post Hosting Only): Ticket Count S&S: Ticket Count Deactivation:Gap b/w last ticket & current ticket: OCR at Contact Center (Last 60 days) BL NI Marked last 30 days: Outstanding Status (NA for welcome 1): NACH Status (NA For welcome 1):

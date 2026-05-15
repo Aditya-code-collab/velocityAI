@@ -1,0 +1,3 @@
+# How to add/ cancel appointment/ meeting through WebERP?
+
+Add appointment/ meetingLogin WebERPOpen the company in which you want to create/ add an appointmentClick on 'STS'Click on 'STS update'Select 'Call Update' optionSelect the options and fill the details as per the requirementIn 'Select Call Status' option select 'Talked and appt'Fill the other details (Person to be met, Person Spoken with, date, time, remarks)Click on 'Update'Cancel appointment/ meetingLogin WebERPOpen the company in which you want to delete the appointmentClick on 'STS'Click on 'STS update'Select the options and fill the details as per the requirementIn the screen, you will be viewing an option to cancel the appointmentClick on 'Cancel'

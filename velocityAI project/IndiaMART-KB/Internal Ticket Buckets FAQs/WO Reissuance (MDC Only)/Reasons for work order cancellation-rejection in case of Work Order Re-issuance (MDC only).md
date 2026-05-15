@@ -1,0 +1,3 @@
+# Reasons for work order cancellation/rejection in case of Work Order Re-issuance (MDC only)
+
+Mentioned below are the reasons for WO cancellation/rejection in case of- WO Re-issuance (MDC Only) bucket:Received designing content is not as per IM guidelines.Received designing content is Incomplete (Customer asking for more product selection w.r.t selection shortlisted buy leads).Customer not contactable for Profile Validation call for 3 days.Customer is not satisfied with discussed Buy leads.The customer wants a change in NACH deduction date.Customer not ready for NACH deduction.Approval for hosting is not received within 15 working days from the Design Work order issuance date.

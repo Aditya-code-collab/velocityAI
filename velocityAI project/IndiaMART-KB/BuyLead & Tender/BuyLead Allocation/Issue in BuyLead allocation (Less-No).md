@@ -1,0 +1,3 @@
+# Issue in BuyLead allocation (Less/No)
+
+We must check the following points before raising any concern to the internal departments -Check if the client is receiving the BuyLead allocation as per the paid package he has purchased.Check is the client any type of defaulter. Click here to know moreIf still the issue persists then contact the undersigned.Servicing Team:If weekly BuyLead balance has not been allocated then mail Rehan Atiqulla (rehan.atiqulla@indiamart.com) andIf the hosting BuyLead balance have not been allocated then mail -Vaibhav Gupta (gupta.vaibhav2@indiamart.com) - CSD/ KCD/ Tele- AnnualAakanksha Gupta (aakanksha.gupta@indiamart.com) - Tele- MonthlyContact Centre:Initiate a ticket

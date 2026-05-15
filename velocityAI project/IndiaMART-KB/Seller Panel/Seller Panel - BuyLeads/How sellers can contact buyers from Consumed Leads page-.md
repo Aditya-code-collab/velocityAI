@@ -1,0 +1,3 @@
+# How sellers can contact buyers from Consumed Leads page?
+
+Now sellers can quickly contact buyers through IndiaMART on consumed leads page.Previous Journey:Visit Consumed Leads page -> fetch contact information of buyer -> open personal email -> send email to buyerNew Journey:We have simplified the journey for the user by providing an option to contact buyer directly from IndiaMART LMS.Visit Consumed Leads page -> Click on send message CTA -> land on LMS and send message to buyer through email and SMSAfter clicking on send message CTA, the user will be redirected to Lead Manager section with an active window showcasing the chat of the buyer with whom the seller wanted to connect.

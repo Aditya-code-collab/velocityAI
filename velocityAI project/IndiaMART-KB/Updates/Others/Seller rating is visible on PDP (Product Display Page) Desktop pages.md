@@ -1,0 +1,3 @@
+# Seller rating is visible on PDP (Product Display Page) Desktop pages
+
+We have started showing seller rating for all the paid and free sellers having an average seller rating greater than or equal to 3 on PDP desktop pages.Display of the ratings on the PDP pages:Paid seller:https://www.indiamart.com/proddetail/white-phenyl-11785722291.html https://www.indiamart.com/proddetail/wildcraft-hypa-shield-w95-outdoor-protection-mask-22238368088.htmlFree seller:https://www.indiamart.com/proddetail/dell-3060-mt-desktop-20520833512.htmlhttps://www.indiamart.com/proddetail/solar-thermal-air-conditioners-6943688855.html

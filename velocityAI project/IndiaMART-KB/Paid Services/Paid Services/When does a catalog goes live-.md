@@ -1,0 +1,3 @@
+# When does a catalog goes live?
+
+Ideally, the catalog gets Live within 7 days. But the Catalog Live time may get delayed due to various factors like:Seller delays Catalog Designing (Earlier you provide product details to be added in Catalog, earlier it goes live)Time for Payment to get processedThe time required for material collectionIt is a NACH based payment & if NACH remains inactive, live time of catalog may get delayeddepending on these factors, the catalog may take 10-15 days for production from the work order issuance date.Click here to check our customers' help section for this article.

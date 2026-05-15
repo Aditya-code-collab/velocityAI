@@ -1,0 +1,3 @@
+# PNS Assignment Criteria for a Free Seller
+
+We assign PNS Number to only 3 Free Seller Custtypes-QGFCPVGFCPVFCPFor the first two Custtypes i.e QGFCP and VGFCP, we give PNS Number to any new free sellers on IndiaMart who do not have any PNS assigned. For a VFCP supplier to be eligible for PNS, the following are the conditions that we check-There should be at least 1 Non-PNS Click on the supplier in the last 90 days i.e the buyer has clicked on the 'Call Now' CTA of the supplier and expressed their interest in the last 90 days.The Supplier Country should be India.The Supplier Location preference should not be set to foreign.The Supplier should not have any parent GLID Mapped.The above conditions are followed and the number assignment is done every night by a cron.

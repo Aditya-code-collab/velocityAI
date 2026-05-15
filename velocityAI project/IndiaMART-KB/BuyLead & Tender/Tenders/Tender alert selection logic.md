@@ -1,0 +1,3 @@
+# Tender alert selection logic
+
+Considering that users who deal with their products all over India do not care about the location of the tenders, and mainly want the tenders to be fresh, the following change has been made:For users with local location preference, the tender alerts remain the same: state and rest of India break-up (5+5 tenders) is continuedFor users with location preference other than local, there is no forcing of 5 state tenders: there is a list of up to 10 tenders sorted by freshness, mcat rank, and distance from the user's home state; if there are tenders from the user's state in the 10 being sent, there will be a heading showing it (case 1), and if not, then All India will be shown (case 2)

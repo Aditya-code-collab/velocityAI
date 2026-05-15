@@ -1,0 +1,3 @@
+# Add/edit/remove CIN Number
+
+CIN is not verifiedAdd:Seller panel >> Company Profile >> Business Profile >> Statutory Details >> CIN NumberEdit/ Remove:If the CIN is not verified then the client can make the changes himself:Seller panel >> Company Profile >> Business Profile >> Statutory Details >> CIN NumberCIN is verifiedEdit/ Remove:If the CIN is verified then the client cannot make the changes himself.The servicing team needs to initiate a ticket an internal ticket in "GST Number/Company Name Change" bucket along with the reason for CIN removal.Please Note:CIN Verification is an auto approval Process. It does not require any ticket.Only in case of change of verified CIN, ticket is required.

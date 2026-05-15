@@ -1,0 +1,3 @@
+# Criteria for marking the lead as Retail BuyLead
+
+Initially, the team will identify two parameters using an ML model:1. Requirement type of the BuyLead Personal use Business useRequirement type "For Reselling" will be treated as same as "For Business use".2. High/Low TOVLow/High value: This will be based on the Quantity or TOV value of a BuyLead.We will be calculating TOV values for BuyLeads where no TOV value is mentioned.Criteria for marking leads as Retail:The team will be marking all those BuyLeads as retail which is marked as Low Personal Use by our model, and Predicted TOV value is less than 20,000.Please note: We will be marking Retail for only those BuyLeads where Quantity or TOV data is available

@@ -1,0 +1,3 @@
+# Benefits of Renewal
+
+Promotion of the catalog at Local/ India / Foreign as per the requirement of the clientReceive Leads of the buyer in the form of a call, Direct enquiry and BuyLeadsThrough renewal, his listing will be visible on an online platform. In today's' world online promotion/ visibility of the company is necessary and IM provides such a platform to you with some other benefits like sharing the relevant leads to your company. Will help to increase the ROI of the companyYou can create a corporate video for your company and promote it through your catalog (in case of Maximiser service)

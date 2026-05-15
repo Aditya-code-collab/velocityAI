@@ -1,0 +1,3 @@
+# IndiaMART mobile app is getting auto-logout
+
+Troubleshooting steps: - Ask the duration of the issue. - Ask if the client can see an option to update the existing version of IndiaMART mobile application in Playstore.If yes: Then guide the client to update the IM mobile application and if it fixes the issue marks the ticket as OCR.If the issue still exists: - For Contact Center: Ticket is to be issued with information mentioned in 1st point i.e. (Duration of the issue) - For Servicing Team: Mail to Mobile App team (mobitest@indiamart.com) with information mentioned in 1st point i.e. (Duration of the issue)

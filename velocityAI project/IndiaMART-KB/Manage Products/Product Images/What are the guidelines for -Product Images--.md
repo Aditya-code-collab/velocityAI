@@ -1,0 +1,3 @@
+# What are the guidelines for "Product Images"?
+
+The minimum resolution should be 500pxWe have allowed images with dimensions up to 2000pxThe maximum allowable file size of the product image is 5MB without compressionThe product must cover at least 60-70% of the entire image area (use white background)Images should not have additional objects for a mix of different productsImages must be free of any text i.e. watermark, logo, prices, product offers, timestamps, etc.Images should not contain drawings and illustrations of the productImages clicked from different angles should be considered as separate imagesEach image in the catalog should be unique

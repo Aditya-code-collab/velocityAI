@@ -1,0 +1,3 @@
+# Client is complaining that he/she has shared the Quotation through Lead Manager with the buyer but the buyer is claiming that he/she has not received it
+
+Educate the client that the quotation sent to the buyer through seller panel will reflect under the ‘Lead Manager’ section in the buyer conversation history. Educate the client to check for blue ticks on any message (or sent quotation), which indicates that the buyer has viewed that quotation. The client can also view the date and time when the buyer has read that message.Quotation sent to the buyer is sent via "buyershelp+reply@indiamart.com", and not from seller’s email id. Hence, ask the client to contact the buyer and suggest him/her search the quotation with above-mentioned email id.

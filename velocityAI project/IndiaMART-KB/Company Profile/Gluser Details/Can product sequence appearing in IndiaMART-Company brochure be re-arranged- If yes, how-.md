@@ -1,0 +1,3 @@
+# Can product sequence appearing in IndiaMART/Company brochure be re-arranged? If yes, how?
+
+Ans: Yes, product sequence appearing in the IndiaMART/ Company brochure can be re-arranged. As we know that the IndiaMART/Company brochure is a  system-generated brochure which is dependent upon the client's catalog hence to re-arrange the product sequence:- Guide the client to change product sequence in the catalog from below mentioned path:Seller Panel >> Manage Products >> More options >> Rearrange productsUpon saving the changes, the re-arranged sequence will immediately start reflecting in the IndiaMART/ Company brochure.

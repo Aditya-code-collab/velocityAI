@@ -1,0 +1,3 @@
+# Change in the UI/UX of the Seller Panel (20th Dec'21)
+
+We have redesigned the Left Navigation on Seller.IM delivers a great viewing experience and makes it more interactive across all pages of Seller.IM.What have we done now?The icons and texts now follow a top-down approach i.e. Texts are placed below the Icon for better UX.We have removed the Profile Details (Owner's Name, Company Name & Ratings) from the Left Navigation tool to the Global Header.The naming convention of some headings were changed as mentioned below (Company Profile - "Profile" ; Manage Products - "Products" ; Bills and Invoices - "Invoices")Screenshots for reference:

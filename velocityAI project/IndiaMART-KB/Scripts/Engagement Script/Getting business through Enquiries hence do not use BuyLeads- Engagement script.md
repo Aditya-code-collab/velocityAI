@@ -1,0 +1,3 @@
+# Getting business through Enquiries hence do not use BuyLeads: Engagement script
+
+Good Morning Sir! I am <your name> from IndiaMART. How are you doing sir!                  - Wait for the customer responseThis is a service feedback call. Is this the right time to talk to you? - Wait for the customer response Thank you, Sir. This call is being made for taking your feedback on BuyLeads and Buyer calls and this call is being recorded for training and feedback purpose. -Wait for the customer responseSir, I can check that you consumed BuyLeads last on <<date>>. You haven't consumed BuyLeads after that. -- Listen to the customer & accordingly revert  If the client says - I am getting enough business from Enquiries & Buyer calls, so I don't use BuyLeads

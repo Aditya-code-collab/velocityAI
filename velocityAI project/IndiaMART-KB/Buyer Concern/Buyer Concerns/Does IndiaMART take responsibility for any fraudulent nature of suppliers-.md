@@ -1,0 +1,3 @@
+# Does IndiaMART take responsibility for any fraudulent nature of suppliers?
+
+IndiaMART is an online marketplace which brings together buyers and suppliers. It does not participate in the negotiations and transactions that take place between buyers and suppliers.IndiaMART, therefore, is not accountable for the fraudulent nature of suppliers/ buyers.However, in case there is a complaint against a supplier, IndiaMART conducts a proper check and takes appropriate action.Additionally, we recommend buyers to source products only from verified sellers, preferably with TrustSEAL.You can access the IndiaMART complaint form and submit your issueClick here to check our customers' help section for this article.

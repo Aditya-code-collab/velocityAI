@@ -1,0 +1,3 @@
+# Supplier doesn't want to display product prices due to the variation on a daily basis?
+
+Providing price on the product helps in the better decision making for the buyer and at the same time, it is one of the listing criteria for supplier listings on IndiaMARTIf a product's price is dependent on market fluctuations you can provide a tentative price against your product’s which could be negotiated with the buyers during the discussion stageEducate that we have a filter on "dir.indiamart.com" that 'Product with price', Once buyer click on it then only those products are visible wherein the price is updated.
