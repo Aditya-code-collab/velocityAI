@@ -13,8 +13,11 @@ Compliance search reads from the **`indiamart_kb`** collection by default (the i
 ## Commands
 
 ```bash
-# Start everything with one command (recommended)
-./start.sh
+# Start everything in the background (recommended)
+./start.sh          # spawns uvicorn + claude controller; logs → logs/server.log, logs/claude.log
+
+# Stop everything
+./stop_all.sh       # kills uvicorn, open_claude.sh, and any claude --print processes
 
 # --- or manually ---
 
@@ -38,29 +41,23 @@ pip install -r requirements.txt
 # Start claude controller (separate terminal)
 bash open_claude.sh
 
-# Smoke test
+# Smoke test — all four fields are required
 curl -X POST http://localhost:8001/api/transcription \
   -H "Content-Type: application/json" \
-  -d '{"transcription": "your call text here", "agent_name": "Test Agent", "caller_id": "optional"}'
+  -d '{"transcription": "call text", "agent_name": "Rahul Sharma", "agent_id": "AGT-001", "caller_id": "+91 98765 43210", "caller_name": "Amit Kumar"}'
 
 curl http://localhost:8001/api/jobs/<job_id>
-curl http://localhost:8001/api/jobs          # list recent 20 jobs
+curl http://localhost:8001/api/jobs          # list recent 20 jobs (local SQLite)
 curl http://localhost:8001/health            # liveness probe
 
 # Qdrant report store
-curl http://localhost:8001/api/reports                  # list all stored reports (paginated)
-curl http://localhost:8001/api/reports/<job_id>         # fetch single report by job UUID
-curl -X DELETE http://localhost:8001/api/reports/<job_id>  # delete report from Qdrant
-
-# Backfill a completed SQLite job that is missing from Qdrant
-.venv/bin/python3 -c "
-import json
-from database import get_job
-from qdrant_helper import store_report
-job = get_job('<job_id>')
-store_report(job, json.loads(job['report']))
-print('done')
-"
+curl http://localhost:8001/api/reports                                        # all reports, newest first
+curl "http://localhost:8001/api/reports?caller_id=C001"                       # filter by caller_id (exact)
+curl "http://localhost:8001/api/reports?caller_name=Amit"                     # filter by caller name (partial)
+curl "http://localhost:8001/api/reports?agent_name=Rahul"                     # filter by agent name (partial)
+curl "http://localhost:8001/api/reports?caller_id=C001&agent_name=Rahul"      # combined filter (AND)
+curl http://localhost:8001/api/reports/<job_id>                               # all analyses for a job
+curl -X DELETE http://localhost:8001/api/reports/<job_id>                     # delete all analyses for a job
 
 # Check for stale claude controller processes
 ps aux | grep "open_claude\|claude --print" | grep -v grep
@@ -69,11 +66,13 @@ ps aux | grep "open_claude\|claude --print" | grep -v grep
 ## Architecture
 
 ```
-POST /api/transcription
+POST /api/transcription  (requires: transcription, agent_name, agent_id, caller_id, caller_name)
+        │
+        ├─ If caller_id already exists → reuse same job_id, reset to pending
         │
         ▼
     SQLite jobs.db          ← status: pending → processing → completed/failed
-        │
+        │                      report field stores a JSON array (one entry per analysis run)
         ▼
   open_claude.sh (bash poll loop, every 5s)
         │
@@ -86,15 +85,15 @@ POST /api/transcription
         ├─ Step 3: language reasoning — derive expectations from top hit's
         │           content (or rules[] if present) → check transcription
         ├─ Step 4: compute compliance_score (0–100)
-        ├─ Step 5: persist report → SQLite + Qdrant (indiamart_reports)
+        ├─ Step 5: append report to history in SQLite + new Qdrant point per analysis
         ├─ Step 6: send email alert if violations found
         └─ Step 7: print JOB_DONE and exit
         │
         ▼
-GET /api/jobs/{job_id}        → report + violations + compliance_score  (from SQLite)
-GET /api/reports              → paginated list of all reports            (from Qdrant)
-GET /api/reports/{job_id}     → single report by job UUID               (from Qdrant)
-DELETE /api/reports/{job_id}  → remove a report                         (from Qdrant)
+GET /api/jobs/{job_id}        → report array + violations + compliance_score  (from SQLite)
+GET /api/reports              → all reports newest-first, filterable           (from Qdrant)
+GET /api/reports/{job_id}     → all analyses for a job, oldest-first          (from Qdrant)
+DELETE /api/reports/{job_id}  → remove all analyses for a job                 (from Qdrant)
 ```
 
 **Important:** Only run one `open_claude.sh` at a time. `claim_next_pending()` in `database.py` uses a read-then-update pattern that is not safe under concurrent access. Always check `ps aux | grep "open_claude\|claude --print"` before starting a new controller. Deleting `open_claude.sh` or killing its parent does **not** kill already-running `claude --print` subprocesses — kill them explicitly.
@@ -145,17 +144,19 @@ payload fields:
 
 ### Collection: `indiamart_reports`
 
-Each completed job is persisted here after the controller saves to SQLite. Point ID = job UUID.
+Each compliance analysis run creates a **new Qdrant point** (point ID = fresh UUID). Multiple analyses for the same `caller_id` all live as separate points, enabling full history queries.
 
 ```
 vector  = embed(compliance_summary + " " + recommendation)   ← 1536-dim float array
 
 payload fields:
-  job_id              string   UUID of the job
+  job_id              string   UUID of the job (shared across re-runs for same caller)
   agent_name          string   name of the agent who made the call
-  caller_id           string   caller identifier (optional)
-  created_at          string   ISO-8601 timestamp
-  category            string   matched SOP category
+  agent_id            string   agent employee ID
+  caller_id           string   caller identifier
+  caller_name         string   caller's full name
+  created_at          string   ISO-8601 timestamp of this analysis run
+  category            string   matched KB topic
   violations_found    bool     true if any violations detected
   compliance_score    int      0–100
   violations          object[] list of {rule, description, evidence}
@@ -164,6 +165,12 @@ payload fields:
 ```
 
 Qdrant write failure is non-fatal — the SQLite record is always saved first.
+
+Filtering via `GET /api/reports`:
+- `?caller_id=X` — exact match
+- `?caller_name=X` — partial case-insensitive match
+- `?agent_name=X` — partial case-insensitive match
+- Multiple params → AND filter
 
 ### Two-stage matching
 
@@ -179,14 +186,22 @@ Qdrant write failure is non-fatal — the SQLite record is always saved first.
 `static/index.html` is a single-file vanilla JS SPA served at `GET /` by FastAPI (`StaticFiles` mount + `FileResponse`). No build step.
 
 **Layout — two-column:**
-- **Left panel:** submit form (file upload drop zone + manual textarea + Agent Name / Caller ID) and a recent-jobs sidebar (last 30, color-coded dots, click to load)
-- **Right panel:** live compliance report — score ring, violations with evidence quotes, summary, recommendation
+- **Left panel:** submit form (file upload drop zone + manual textarea + Agent Name / Agent ID / Caller ID / Caller Name — all required) and a recent-jobs sidebar (last 30 from Qdrant, shared across all machines)
+- **Right panel:** live compliance report — score ring, violations with evidence quotes, summary, recommendation, previous analyses history
+
+**Sidebar features:**
+- Filter tabs: All / Flagged (violations only, with live count badge)
+- Three filter inputs: Caller ID (exact), Caller Name (partial), Agent Name (partial) — all work together (AND)
+- Clear filters link
+- Shows agent name + caller ID per row; red dot for flagged, green for compliant
 
 **Key JS behaviours:**
 - On submit → `POST /api/transcription` → starts a `setInterval` polling `GET /api/jobs/{id}` every 2s until `completed` or `failed`
+- Sidebar reads from `GET /api/reports` (Qdrant, shared across machines); pending local jobs shown via `pendingJobs` map until they land in Qdrant
 - File drop zone (`#dropZone`) accepts `.txt`, `.log`, `.csv` via click-browse or drag-and-drop; reads with `FileReader` and populates the textarea
 - Recent jobs list auto-refreshes every 10s
 - Score ring colour: green ≥ 80, amber ≥ 50, red < 50
+- Clicking a job loads full analysis history (all runs for that caller)
 
 To add a new field to the report, update `controller.md` (add the field to the JSON schema section) and the `renderReport()` function in `index.html`.
 
@@ -194,18 +209,18 @@ To add a new field to the report, update `controller.md` (add the field to the J
 
 | File | Role |
 |------|------|
-| `start.sh` | One-command script — starts API server + claude controller |
+| `start.sh` | One-command background start — nohup uvicorn + claude controller; logs to `logs/` |
+| `stop_all.sh` | Kill uvicorn, open_claude.sh, and claude --print processes |
 | `open_claude.sh` | Poll loop: spawns a fresh `claude --print < controller.md` per job |
 | `controller.md` | Single-job agent instructions — claim → embed → analyse → persist → alert → exit |
-| `main.py` | FastAPI app — `POST /api/transcription`, `GET /api/jobs/{id}`, `GET /api/jobs`, `GET /health`, `GET /api/reports`, `GET /api/reports/{id}`, `DELETE /api/reports/{id}`, `GET /` (serves UI) |
-| `static/index.html` | Single-file SPA — submit form, live polling, report renderer |
-| `qdrant_helper.py` | Raw `httpx` REST calls to Qdrant + OpenAI embeddings via LiteLLM proxy; functions: `search_sops`, `upsert_sop`, `store_report`, `get_report`, `list_reports`, `delete_report`, `ensure_collection`, `ensure_reports_collection` |
-| `database.py` | SQLite helpers — `init_db`, `create_job`, `claim_next_pending`, `update_job`, `get_job`, `list_jobs` |
+| `main.py` | FastAPI app — all REST endpoints |
+| `static/index.html` | Single-file SPA — submit form, live polling, report renderer, filters |
+| `qdrant_helper.py` | Raw `httpx` REST calls to Qdrant + OpenAI embeddings via LiteLLM proxy |
+| `database.py` | SQLite helpers — `init_db`, `create_job`, `claim_next_pending`, `update_job`, `get_job`, `get_job_by_caller_id`, `list_jobs` |
 | `email_helper.py` | CLI-callable SMTP sender: `python3 email_helper.py --to --subject --body` |
 | `setup_sops.py` | One-time seed — upserts 5 IndiaMart SOPs into legacy `indiamart_sops` |
 | `config.py` | All env-var config via `python-dotenv`; exposes `PROJECT_DIR`, `SOP_SEARCH_COLLECTION` |
 | `velocityAI project/sync-pipeline/kb_ingest.py` | Ingests `IndiaMART-KB/<subdir>` markdown into the `indiamart_kb` collection (1 article = 1 point; idempotent) |
-| `velocityAI project/sync-pipeline/` | Freshdesk→markdown→Qdrant pipeline. **Note:** the older `qdrant_ingest.py`/`run_pipeline.py` use fastembed (384-dim) + qdrant-client against a *local* Qdrant — incompatible with the shared remote server. Use `kb_ingest.py` for the live collection. |
 
 ## External services
 
@@ -217,10 +232,12 @@ To add a new field to the report, update `controller.md` (add the field to the J
 
 ## Report schema
 
+Each job stores a **list** of analysis objects in SQLite (one per run). The Qdrant collection stores each analysis as a separate point.
+
 ```json
 {
   "job_id": "...",
-  "category": "subscription_sales",
+  "category": "BuyLead & Tender",
   "violations_found": true,
   "violations": [
     { "rule": "...", "description": "...", "evidence": "<verbatim quote>" }
@@ -262,6 +279,6 @@ CLAUDE_BIN=claude                # optional, path to claude binary
 - `qdrant_helper.py` uses raw `httpx` calls — do not switch to the `qdrant-client` library (v1.18 is incompatible with server v1.9.2).
 - Qdrant must be addressed as `http://34.47.255.166:80` (explicit port 80) — omitting it causes the client to append `:6333`.
 - Email requires a Gmail **App Password**: Google Account → Security → 2-Step Verification → App passwords.
-- To re-seed SOPs: `curl -X DELETE http://34.47.255.166:80/collections/indiamart_sops` then `python3 setup_sops.py`.
-- Jobs completed before `store_report()` was added will exist in SQLite but not in Qdrant — backfill them manually using the snippet in the Commands section above.
-- A stale `claude --print` process (from a previous controller run) will compete for jobs — always kill old processes before starting a new controller.
+- Same `caller_id` across submissions → same `job_id` reused; each new analysis appends to the report array in SQLite and creates a new Qdrant point.
+- The sidebar reads from Qdrant (`/api/reports`) so reports are visible on all machines. Locally-submitted pending jobs appear via the in-memory `pendingJobs` map until processing completes.
+- A stale `claude --print` process (from a previous controller run) will compete for jobs — always run `./stop_all.sh` before starting a new controller.
