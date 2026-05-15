@@ -117,11 +117,28 @@ COMPLIANCE_REPORT_END
 
 Worker parses the report using `COMPLIANCE_REPORT_START/END` markers, with a fallback regex that grabs the last `{..."category"...}` block if markers are absent.
 
+## Frontend
+
+`static/index.html` is a single-file vanilla JS SPA served at `GET /` by FastAPI (`StaticFiles` mount + `FileResponse`). No build step.
+
+**Layout — two-column:**
+- **Left panel:** submit form (file upload drop zone + manual textarea + Agent Name / Caller ID) and a recent-jobs sidebar (last 30, color-coded dots, click to load)
+- **Right panel:** live compliance report — score ring, violations with evidence quotes, summary, recommendation
+
+**Key JS behaviours:**
+- On submit → `POST /api/transcription` → starts a `setInterval` polling `GET /api/jobs/{id}` every 2s until `completed` or `failed`
+- File drop zone (`#dropZone`) accepts `.txt`, `.log`, `.csv` via click-browse or drag-and-drop; reads with `FileReader` and populates the textarea
+- Recent jobs list auto-refreshes every 10s
+- Score ring colour: green ≥ 80, amber ≥ 50, red < 50
+
+To add a new section to the report, update both `agent_prompt.py` (add the field to the JSON output format) and the `renderReport()` function in `index.html`.
+
 ## Key files
 
 | File | Role |
 |------|------|
-| `main.py` | FastAPI app — `POST /api/transcription`, `GET /api/jobs/{id}`, `GET /api/jobs`, `GET /health` |
+| `main.py` | FastAPI app — `POST /api/transcription`, `GET /api/jobs/{id}`, `GET /api/jobs`, `GET /health`, `GET /` (serves UI) |
+| `static/index.html` | Single-file SPA — submit form, live polling, report renderer |
 | `worker.py` | Polls SQLite every 5s, spawns `claude --print` subprocess per job |
 | `agent_prompt.py` | Builds the full compliance analysis prompt |
 | `qdrant_helper.py` | Raw `httpx` REST calls to Qdrant + OpenAI embeddings via LiteLLM proxy |
