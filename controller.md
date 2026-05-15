@@ -64,7 +64,7 @@ from qdrant_helper import store_report
 
 report = <report_json>
 job_id = '<job_id>'
-job = {'id': job_id, 'agent_name': '<agent_name>', 'caller_id': '<caller_id>'}
+job = {'id': job_id, 'agent_name': '<agent_name>', 'agent_id': '<agent_id>', 'caller_id': '<caller_id>', 'caller_name': '<caller_name>'}
 
 # append to history
 existing = get_job(job_id)

@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from database import create_job, get_job, get_job_by_caller_id, init_db, list_jobs, update_job
-from qdrant_helper import delete_report, get_report, get_reports_by_caller, list_reports
+from qdrant_helper import delete_report, get_report, get_reports_by_filter, list_reports
 
 app = FastAPI(
     title="VelocityAI SOP Compliance Checker",
@@ -41,8 +41,10 @@ def root():
 
 class TranscriptionRequest(BaseModel):
     transcription: str
-    caller_id: Optional[str] = None
-    agent_name: Optional[str] = None
+    caller_id: str
+    caller_name: str
+    agent_name: str
+    agent_id: str
 
 
 class JobResponse(BaseModel):
@@ -91,6 +93,14 @@ def submit_transcription(req: TranscriptionRequest):
     """Queue a call transcription for compliance analysis."""
     if not req.transcription.strip():
         raise HTTPException(status_code=400, detail="transcription cannot be empty")
+    if not req.agent_name.strip():
+        raise HTTPException(status_code=400, detail="agent_name is required")
+    if not req.agent_id.strip():
+        raise HTTPException(status_code=400, detail="agent_id is required")
+    if not req.caller_id.strip():
+        raise HTTPException(status_code=400, detail="caller_id is required")
+    if not req.caller_name.strip():
+        raise HTTPException(status_code=400, detail="caller_name is required")
 
     # reuse existing job_id when caller_id matches a previous job
     if req.caller_id:
@@ -99,7 +109,9 @@ def submit_transcription(req: TranscriptionRequest):
             update_job(
                 existing["id"],
                 transcription=req.transcription,
-                agent_name=req.agent_name or existing.get("agent_name"),
+                caller_name=req.caller_name,
+                agent_name=req.agent_name,
+                agent_id=req.agent_id,
                 status="pending",
                 error=None,
             )
@@ -110,7 +122,9 @@ def submit_transcription(req: TranscriptionRequest):
         job_id=job_id,
         transcription=req.transcription,
         caller_id=req.caller_id,
+        caller_name=req.caller_name,
         agent_name=req.agent_name,
+        agent_id=req.agent_id,
     )
     return JobResponse(job_id=job_id, status="pending")
 
@@ -133,25 +147,26 @@ def list_recent_jobs(limit: int = 20):
 # ── Qdrant report store ───────────────────────────────────────────────────────
 
 @app.get("/api/reports")
-def list_stored_reports(limit: int = 20, offset: str | None = None):
-    """Return stored compliance reports from Qdrant (paginated)."""
+def list_stored_reports(
+    limit: int = 20,
+    offset: str | None = None,
+    caller_id: str | None = None,
+    caller_name: str | None = None,
+    agent_name: str | None = None,
+):
+    """Return stored compliance reports from Qdrant.
+
+    Filter by caller_id, caller_name, agent_name (all partial/exact matches, AND).
+    Without filters returns all reports paginated newest-first.
+    """
     try:
+        if caller_id or caller_name or agent_name:
+            records = get_reports_by_filter(caller_id=caller_id, caller_name=caller_name, agent_name=agent_name)
+            return {"reports": records, "next_offset": None, "total": len(records)}
         records, next_offset = list_reports(limit=limit, offset=offset)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Qdrant error: {e}")
     return {"reports": records, "next_offset": next_offset}
-
-
-@app.get("/api/caller/{caller_id}")
-def get_caller_history(caller_id: str):
-    """Fetch all compliance analyses for a caller_id across all jobs (oldest first)."""
-    try:
-        analyses = get_reports_by_caller(caller_id)
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Qdrant error: {e}")
-    if not analyses:
-        raise HTTPException(status_code=404, detail="No reports found for this caller")
-    return {"caller_id": caller_id, "total": len(analyses), "analyses": analyses}
 
 
 @app.get("/api/reports/{job_id}")

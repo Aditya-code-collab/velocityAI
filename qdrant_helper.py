@@ -134,18 +134,27 @@ def list_reports(limit: int = 20, offset: str | None = None) -> tuple[list[dict]
     return points, next_offset
 
 
-def get_reports_by_caller(caller_id: str) -> list[dict]:
-    """Fetch all analyses for a caller_id across all jobs, sorted oldest-first."""
-    body = {
-        "limit": 100,
-        "with_payload": True,
-        "with_vector": False,
-        "filter": {"must": [{"key": "caller_id", "match": {"value": caller_id}}]},
-    }
+def get_reports_by_filter(caller_id: str | None = None, caller_name: str | None = None, agent_name: str | None = None) -> list[dict]:
+    """Fetch analyses filtered by caller_id (exact), caller_name and/or agent_name (partial, case-insensitive).
+
+    All filters applied together (AND).
+    """
+    body: dict = {"limit": 100, "with_payload": True, "with_vector": False}
+    if caller_id:
+        body["filter"] = {"must": [{"key": "caller_id", "match": {"value": caller_id}}]}
+
     r = _http_client().post(f"/collections/{REPORTS_COLLECTION}/points/scroll", json=body)
     r.raise_for_status()
-    points = r.json()["result"].get("points", [])
-    payloads = [p["payload"] for p in points]
+    payloads = [p["payload"] for p in r.json()["result"].get("points", [])]
+
+    # partial case-insensitive matches in Python
+    if caller_name:
+        needle = caller_name.lower()
+        payloads = [p for p in payloads if needle in (p.get("caller_name") or "").lower()]
+    if agent_name:
+        needle = agent_name.lower()
+        payloads = [p for p in payloads if needle in (p.get("agent_name") or "").lower()]
+
     return sorted(payloads, key=lambda p: p.get("created_at") or "")
 
 
@@ -205,7 +214,9 @@ def store_report(job: dict, report: dict):
         "payload": {
             "job_id": job["id"],
             "agent_name": job.get("agent_name"),
+            "agent_id": job.get("agent_id"),
             "caller_id": job.get("caller_id"),
+            "caller_name": job.get("caller_name"),
             "created_at": datetime.utcnow().isoformat(),
             "category": report.get("category"),
             "violations_found": bool(report.get("violations_found", False)),

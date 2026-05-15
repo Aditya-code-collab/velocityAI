@@ -224,11 +224,15 @@
   .job-agent   { color: var(--text); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .job-caller  { color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; }
   .job-time    { color: var(--muted); font-size: 11px; flex-shrink: 0; }
-  .search-box  {
-    padding: 8px 24px;
+  .filter-inputs {
+    padding: 10px 16px;
     border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: var(--surface);
   }
-  .search-box input {
+  .filter-inputs input {
     background: var(--surface2);
     border: 1px solid var(--border);
     border-radius: 6px;
@@ -238,7 +242,15 @@
     width: 100%;
     outline: none;
   }
-  .search-box input:focus { border-color: var(--accent); }
+  .filter-inputs input:focus { border-color: var(--accent); }
+  .filter-clear {
+    font-size: 11px;
+    color: var(--muted);
+    cursor: pointer;
+    text-align: right;
+    padding-top: 2px;
+  }
+  .filter-clear:hover { color: var(--accent2); }
 
   /* ── Right Panel ── */
   .right-panel {
@@ -472,12 +484,22 @@
         </div>
         <div class="row2">
           <div class="form-row">
-            <label>Agent Name</label>
-            <input id="agentName" type="text" placeholder="e.g. Rahul Sharma" />
+            <label>Agent Name *</label>
+            <input id="agentName" type="text" placeholder="e.g. Rahul Sharma" required />
           </div>
           <div class="form-row">
-            <label>Caller ID</label>
-            <input id="callerId" type="text" placeholder="e.g. +91 98765 43210" />
+            <label>Agent ID *</label>
+            <input id="agentId" type="text" placeholder="e.g. AGT-001" required />
+          </div>
+        </div>
+        <div class="row2">
+          <div class="form-row">
+            <label>Caller ID *</label>
+            <input id="callerId" type="text" placeholder="e.g. +91 98765 43210" required />
+          </div>
+          <div class="form-row">
+            <label>Caller Name *</label>
+            <input id="callerName" type="text" placeholder="e.g. Amit Kumar" required />
           </div>
         </div>
         <button type="submit" class="btn-submit" id="submitBtn">
@@ -497,8 +519,11 @@
           Flagged <span class="tab-badge" id="flaggedCount">0</span>
         </div>
       </div>
-      <div class="search-box">
-        <input id="callerSearch" type="text" placeholder="Search by caller ID or agent…" oninput="renderJobsList(cachedJobs)" />
+      <div class="filter-inputs">
+        <input id="filterCallerId"   type="text" placeholder="Filter by Caller ID…"    oninput="renderJobsList(cachedJobs)" />
+        <input id="filterCallerName" type="text" placeholder="Filter by Caller Name…" oninput="renderJobsList(cachedJobs)" />
+        <input id="filterAgentName"  type="text" placeholder="Filter by Agent Name…"  oninput="renderJobsList(cachedJobs)" />
+        <div class="filter-clear" onclick="clearFilters()">✕ Clear filters</div>
       </div>
       <div class="jobs-list" id="jobsList">
         <!-- populated by JS -->
@@ -537,7 +562,9 @@ function qdrantToJob(r) {
     category: r.category,
     violations_found: r.violations_found,
     agent_name: r.agent_name,
+    agent_id: r.agent_id,
     caller_id: r.caller_id,
+    caller_name: r.caller_name,
     created_at: r.created_at,
     report: [{
       job_id: r.job_id,
@@ -555,7 +582,15 @@ function qdrantToJob(r) {
 document.getElementById('submitForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const text = document.getElementById('transcription').value.trim();
-  if (!text) return;
+  const agentName  = document.getElementById('agentName').value.trim();
+  const agentId    = document.getElementById('agentId').value.trim();
+  const callerId   = document.getElementById('callerId').value.trim();
+  const callerName = document.getElementById('callerName').value.trim();
+  if (!text)       { showToast('Transcription is required', true); return; }
+  if (!agentName)  { showToast('Agent Name is required', true); return; }
+  if (!agentId)    { showToast('Agent ID is required', true); return; }
+  if (!callerId)   { showToast('Caller ID is required', true); return; }
+  if (!callerName) { showToast('Caller Name is required', true); return; }
 
   const btn = document.getElementById('submitBtn');
   btn.disabled = true;
@@ -567,8 +602,10 @@ document.getElementById('submitForm').addEventListener('submit', async (e) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         transcription: text,
-        agent_name: document.getElementById('agentName').value.trim() || null,
-        caller_id:   document.getElementById('callerId').value.trim() || null,
+        agent_name: agentName,
+        agent_id: agentId,
+        caller_id: callerId,
+        caller_name: callerName,
       }),
     });
     if (!res.ok) throw new Error(await res.text());
@@ -577,7 +614,10 @@ document.getElementById('submitForm').addEventListener('submit', async (e) => {
     pendingJobs.set(job.job_id, {
       job_id: job.job_id,
       status: 'pending',
-      agent_name: document.getElementById('agentName').value.trim() || null,
+      agent_name: agentName,
+      agent_id: agentId,
+      caller_id: callerId,
+      caller_name: callerName,
       created_at: new Date().toISOString().replace('Z', ''),
     });
     watchJob(job.job_id);
@@ -647,6 +687,13 @@ async function loadJobs() {
   } catch {}
 }
 
+function clearFilters() {
+  document.getElementById('filterCallerId').value = '';
+  document.getElementById('filterCallerName').value = '';
+  document.getElementById('filterAgentName').value = '';
+  renderJobsList(cachedJobs);
+}
+
 function setFilter(f) {
   activeFilter = f;
   document.getElementById('tabAll').classList.toggle('active', f === 'all');
@@ -664,19 +711,19 @@ function renderJobsList(jobs) {
   // apply filter tab
   let visible = activeFilter === 'flagged' ? jobs.filter(j => j.violations_found) : jobs;
 
-  // apply caller/agent search
-  const q = (document.getElementById('callerSearch')?.value || '').trim().toLowerCase();
-  if (q) {
-    visible = visible.filter(j =>
-      (j.caller_id || '').toLowerCase().includes(q) ||
-      (j.agent_name || '').toLowerCase().includes(q)
-    );
-  }
+  // apply caller_id and agent_id filters
+  const qCallerId   = (document.getElementById('filterCallerId')?.value   || '').trim().toLowerCase();
+  const qCallerName = (document.getElementById('filterCallerName')?.value || '').trim().toLowerCase();
+  const qAgentName  = (document.getElementById('filterAgentName')?.value  || '').trim().toLowerCase();
+  if (qCallerId)   visible = visible.filter(j => (j.caller_id   || '').toLowerCase().includes(qCallerId));
+  if (qCallerName) visible = visible.filter(j => (j.caller_name || '').toLowerCase().includes(qCallerName));
+  if (qAgentName)  visible = visible.filter(j => (j.agent_name  || '').toLowerCase().includes(qAgentName));
 
+  const hasFilter = qCallerId || qCallerName || qAgentName;
   document.getElementById('jobCount').textContent = `${visible.length} job${visible.length !== 1 ? 's' : ''}`;
 
   if (!visible.length) {
-    el.innerHTML = `<div style="padding:16px 24px;color:var(--muted);font-size:13px;">${q ? 'No matches' : activeFilter === 'flagged' ? 'No flagged reports' : 'No jobs yet'}</div>`;
+    el.innerHTML = `<div style="padding:16px 24px;color:var(--muted);font-size:13px;">${hasFilter ? 'No matches' : activeFilter === 'flagged' ? 'No flagged reports' : 'No jobs yet'}</div>`;
     return;
   }
   el.innerHTML = visible.map(j => `
@@ -707,7 +754,9 @@ async function fetchReport(id) {
       job_id: latest.job_id,
       status: 'completed',
       agent_name: latest.agent_name,
+      agent_id: latest.agent_id,
       caller_id: latest.caller_id,
+      caller_name: latest.caller_name,
       created_at: analyses[0].created_at,  // job's first analysis date
       violations_found: latest.violations_found,
       category: latest.category,
@@ -821,6 +870,8 @@ function renderReport(job) {
             <div class="val" style="color:${color}">${score}/100</div>
           </div>
           ${job.agent_name ? `<div class="meta-item"><div class="key">Agent</div><div class="val">${job.agent_name}</div></div>` : ''}
+          ${job.agent_id ? `<div class="meta-item"><div class="key">Agent ID</div><div class="val">${job.agent_id}</div></div>` : ''}
+          ${job.caller_name ? `<div class="meta-item"><div class="key">Caller</div><div class="val">${job.caller_name}</div></div>` : ''}
           ${job.caller_id ? `<div class="meta-item"><div class="key">Caller ID</div><div class="val">${job.caller_id}</div></div>` : ''}
         </div>
       </div>

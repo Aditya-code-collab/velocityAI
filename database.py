@@ -17,7 +17,9 @@ def init_db():
             id          TEXT PRIMARY KEY,
             transcription TEXT NOT NULL,
             caller_id   TEXT,
+            caller_name TEXT,
             agent_name  TEXT,
+            agent_id    TEXT,
             status      TEXT DEFAULT 'pending',
             category    TEXT,
             report      TEXT,
@@ -27,16 +29,22 @@ def init_db():
             updated_at  TEXT
         )
     """)
+    # migrate existing DBs that predate these columns
+    for col in ("agent_id TEXT", "caller_name TEXT"):
+        try:
+            conn.execute(f"ALTER TABLE jobs ADD COLUMN {col}")
+        except Exception:
+            pass
     conn.commit()
     conn.close()
 
 
-def create_job(job_id: str, transcription: str, caller_id: str = None, agent_name: str = None):
+def create_job(job_id: str, transcription: str, caller_id: str = None, caller_name: str = None, agent_name: str = None, agent_id: str = None):
     now = datetime.utcnow().isoformat()
     conn = get_conn()
     conn.execute(
-        "INSERT INTO jobs VALUES (?,?,?,?,'pending',NULL,NULL,0,NULL,?,?)",
-        (job_id, transcription, caller_id, agent_name, now, now),
+        "INSERT INTO jobs (id,transcription,caller_id,caller_name,agent_name,agent_id,status,category,report,violations_found,error,created_at,updated_at) VALUES (?,?,?,?,?,?,'pending',NULL,NULL,0,NULL,?,?)",
+        (job_id, transcription, caller_id, caller_name, agent_name, agent_id, now, now),
     )
     conn.commit()
     conn.close()
