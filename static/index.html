@@ -529,6 +529,106 @@
   ::-webkit-scrollbar { width: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── Flagged Calls page ── */
+  .flagged-page {
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 28px 40px;
+    width: 100%;
+  }
+  .flagged-toolbar {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .flagged-toolbar h2 { font-size: 20px; font-weight: 700; flex: 1; margin: 0; }
+  .flagged-search {
+    padding: 8px 12px; width: 220px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-size: 13px;
+    outline: none; transition: border-color 0.15s;
+  }
+  .flagged-search:focus { border-color: var(--accent); }
+  .flagged-email-row {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .flagged-email-input {
+    padding: 8px 12px; width: 210px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-size: 13px;
+    outline: none; transition: border-color 0.15s;
+  }
+  .flagged-email-input:focus { border-color: var(--accent); }
+  .btn-flagged {
+    padding: 8px 16px; font-size: 13px; font-weight: 600;
+    border: none; border-radius: 8px; cursor: pointer;
+    transition: background 0.15s, opacity 0.15s; white-space: nowrap;
+  }
+  .btn-flagged:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-export {
+    background: var(--surface2); color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-export:hover:not(:disabled) { background: var(--border); }
+  .btn-send-email {
+    background: var(--accent); color: #fff;
+  }
+  .btn-send-email:hover:not(:disabled) { background: #5a52e0; }
+  .flagged-stats {
+    font-size: 13px; color: var(--muted); margin-bottom: 16px;
+  }
+  .flagged-stats strong { color: var(--red); }
+  .flagged-table-wrap {
+    overflow-x: auto; border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+  .flagged-table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    min-width: 1100px;
+  }
+  .flagged-table th {
+    text-align: left; padding: 10px 12px;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--muted); border-bottom: 1px solid var(--border);
+    background: var(--surface); position: sticky; top: 0; z-index: 1;
+    white-space: nowrap;
+  }
+  .flagged-table td {
+    padding: 11px 12px; font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .flagged-table tbody tr { transition: background 0.1s; }
+  .flagged-table tbody tr:hover { background: var(--surface2); }
+  .flagged-table tbody tr:last-child td { border-bottom: none; }
+  .flagged-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--red); display: inline-block;
+    margin-right: 6px; flex-shrink: 0; vertical-align: middle;
+  }
+  .flagged-score {
+    font-family: monospace; font-size: 14px; font-weight: 700; line-height: 1;
+  }
+  .flagged-dim-score {
+    font-family: monospace; font-size: 12px; font-weight: 700;
+  }
+  .flagged-trunc {
+    max-width: 180px; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+    display: block; font-size: 12px; color: var(--muted);
+  }
+  .flagged-empty {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 60px 0; gap: 12px; color: var(--muted);
+  }
+  .flagged-empty .icon { font-size: 48px; opacity: 0.3; }
+  .flagged-spinner {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 60px 0; gap: 14px; color: var(--muted);
+  }
 </style>
 </head>
 <body>
@@ -540,6 +640,7 @@
   <nav>
     <button class="nav-btn active" onclick="showPage('analyze')">Analyze</button>
     <button class="nav-btn" onclick="showPage('agents')">Agent Leaderboard</button>
+    <button class="nav-btn" onclick="showPage('flagged')">Flagged Calls</button>
   </nav>
 </header>
 
@@ -655,6 +756,25 @@
   </div>
 </div>
 
+<!-- ═══ PAGE 3: Flagged Calls ═══ -->
+<div class="page" id="page-flagged">
+  <div class="flagged-page">
+    <div class="flagged-toolbar">
+      <h2>Flagged Calls</h2>
+      <input class="flagged-search" id="flaggedSearch" type="text" placeholder="Search caller, agent, category…" oninput="filterFlaggedTable()" />
+      <button class="btn-flagged btn-export" onclick="exportFlaggedCSV()">Export CSV</button>
+      <div class="flagged-email-row">
+        <input class="flagged-email-input" id="flaggedEmailInput" type="email" placeholder="Override email (optional)" />
+        <button class="btn-flagged btn-send-email" id="sendEmailBtn" onclick="sendFlaggedEmail()">Send Email</button>
+      </div>
+    </div>
+    <div class="flagged-stats" id="flaggedStats"></div>
+    <div id="flaggedTableArea">
+      <div class="flagged-empty"><div class="icon">🚩</div><p>Loading flagged calls…</p></div>
+    </div>
+  </div>
+</div>
+
 <!-- Agent Detail Modal -->
 <div class="agent-modal-overlay" id="agentModal">
   <div class="agent-modal">
@@ -748,6 +868,7 @@ function showPage(page) {
   document.getElementById('page-' + page).classList.add('active');
   event.target.classList.add('active');
   if (page === 'agents') loadLeaderboard();
+  if (page === 'flagged') loadFlaggedCalls();
 }
 
 // ── Input mode (text / audio) ──
@@ -1387,6 +1508,174 @@ audioDrop.addEventListener('drop', (e) => { e.preventDefault(); audioDrop.classL
 document.getElementById('agentModal').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) closeAgentModal();
 });
+
+// ── Flagged Calls page ──
+const FLAGGED_DIM_ABBR = ['SOP', 'OH', 'CP', 'WC', 'AS', 'CS', 'CO', 'KA'];
+let cachedFlaggedRecords = [];
+let filteredFlaggedRecords = [];
+
+async function loadFlaggedCalls() {
+  const area = document.getElementById('flaggedTableArea');
+  const stats = document.getElementById('flaggedStats');
+  area.innerHTML = `<div class="flagged-spinner"><div class="spinner"></div><p>Loading flagged calls…</p></div>`;
+  stats.textContent = '';
+  try {
+    const r = await fetch(`${API}/api/reports?limit=500`);
+    if (!r.ok) throw new Error('Failed to fetch reports');
+    const data = await r.json();
+    const all = data.reports || [];
+    cachedFlaggedRecords = all.filter(rec => rec.violations_found === true);
+    filteredFlaggedRecords = cachedFlaggedRecords;
+    document.getElementById('flaggedSearch').value = '';
+    renderFlaggedTable(cachedFlaggedRecords);
+  } catch (err) {
+    area.innerHTML = `<div class="flagged-empty"><div class="icon">⚠️</div><p>Error loading data: ${err.message}</p></div>`;
+    stats.textContent = '';
+  }
+}
+
+function filterFlaggedTable() {
+  const q = (document.getElementById('flaggedSearch').value || '').trim().toLowerCase();
+  if (!q) {
+    filteredFlaggedRecords = cachedFlaggedRecords;
+  } else {
+    filteredFlaggedRecords = cachedFlaggedRecords.filter(r => {
+      return (
+        (r.caller_name  || '').toLowerCase().includes(q) ||
+        (r.caller_id    || '').toLowerCase().includes(q) ||
+        (r.agent_name   || '').toLowerCase().includes(q) ||
+        (r.agent_id     || '').toLowerCase().includes(q) ||
+        (r.category     || '').toLowerCase().includes(q)
+      );
+    });
+  }
+  renderFlaggedTable(filteredFlaggedRecords);
+}
+
+function renderFlaggedTable(records) {
+  const area = document.getElementById('flaggedTableArea');
+  const stats = document.getElementById('flaggedStats');
+  const total = cachedFlaggedRecords.length;
+  const showing = records.length;
+  if (total === 0) {
+    stats.innerHTML = '';
+    area.innerHTML = `<div class="flagged-empty"><div class="icon">✅</div><p>No flagged calls found — all calls are compliant.</p></div>`;
+    return;
+  }
+  stats.innerHTML = `<strong>${total}</strong> flagged call${total !== 1 ? 's' : ''} found${showing < total ? ` &mdash; showing <strong>${showing}</strong> matching` : ''}`;
+
+  const headerRow = [
+    'Caller Name', 'Caller ID', 'Agent Name', 'Agent ID', 'Category',
+    'Score', ...FLAGGED_DIM_ABBR, 'Summary', 'Recommendation', 'Time',
+  ].map(h => `<th>${h}</th>`).join('');
+
+  const rows = records.map(r => {
+    const sc = r.compliance_score ?? '—';
+    const scColor = typeof sc === 'number' ? scoreColor(sc) : 'var(--muted)';
+    const dims = DIM_KEYS.map((k, i) => {
+      const v = r.scores?.[k];
+      const c = typeof v === 'number' ? scoreColor(v) : 'var(--muted)';
+      return `<td><span class="flagged-dim-score" style="color:${c}">${v ?? '—'}</span></td>`;
+    }).join('');
+    const summary = r.compliance_summary || '';
+    const rec     = r.recommendation    || '';
+    const summaryTrunc = summary.length > 80 ? summary.slice(0, 80) + '…' : summary;
+    const recTrunc     = rec.length     > 80 ? rec.slice(0, 80) + '…' : rec;
+    const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return `<tr>
+      <td><span class="flagged-dot"></span>${r.caller_name || '—'}</td>
+      <td style="font-family:monospace;font-size:12px;">${r.caller_id || '—'}</td>
+      <td>${r.agent_name || '—'}</td>
+      <td style="font-family:monospace;font-size:12px;">${r.agent_id || '—'}</td>
+      <td style="font-size:12px;">${formatCat(r.category)}</td>
+      <td><span class="flagged-score" style="color:${scColor}">${sc}</span></td>
+      ${dims}
+      <td><span class="flagged-trunc" title="${esc(summary)}">${esc(summaryTrunc)}</span></td>
+      <td><span class="flagged-trunc" title="${esc(rec)}">${esc(recTrunc)}</span></td>
+      <td style="font-size:11px;color:var(--muted);white-space:nowrap;">${timeAgo(r.created_at)}</td>
+    </tr>`;
+  }).join('');
+
+  if (records.length === 0) {
+    area.innerHTML = `<div class="flagged-empty"><div class="icon">🔍</div><p>No results match your search.</p></div>`;
+    return;
+  }
+
+  area.innerHTML = `
+    <div class="flagged-table-wrap">
+      <table class="flagged-table">
+        <thead><tr>${headerRow}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+function exportFlaggedCSV() {
+  const records = filteredFlaggedRecords.length > 0 ? filteredFlaggedRecords : cachedFlaggedRecords;
+  if (!records.length) { showToast('No flagged records to export', true); return; }
+
+  const csvVal = v => {
+    const s = (v === null || v === undefined) ? '' : String(v);
+    return '"' + s.replace(/"/g, '""') + '"';
+  };
+
+  const columns = [
+    'Caller Name', 'Caller ID', 'Agent Name', 'Agent ID', 'Category',
+    'Overall Score', 'SOP Compliance', 'Objection Handling',
+    'Call Checkpoints', 'Wait Compliance', 'Agent Sentiment',
+    'Customer Sentiment', 'Call Outcome', 'Knowledge Accuracy',
+    'Summary', 'Recommendation', 'Timestamp',
+  ];
+
+  const lines = [columns.map(csvVal).join(',')];
+  for (const r of records) {
+    const sc = r.scores || {};
+    lines.push([
+      r.caller_name, r.caller_id, r.agent_name, r.agent_id, r.category,
+      r.compliance_score,
+      sc.script_compliance, sc.objection_handling, sc.call_checkpoints,
+      sc.wait_compliance, sc.agent_sentiment, sc.customer_sentiment,
+      sc.call_outcome, sc.knowledge_accuracy,
+      r.compliance_summary, r.recommendation, r.created_at,
+    ].map(csvVal).join(','));
+  }
+
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `flagged_calls_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`Exported ${records.length} record${records.length !== 1 ? 's' : ''}`);
+}
+
+async function sendFlaggedEmail() {
+  const btn = document.getElementById('sendEmailBtn');
+  const emailInput = document.getElementById('flaggedEmailInput').value.trim();
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  try {
+    const body = {};
+    if (emailInput) body.email = emailInput;
+    const r = await fetch(`${API}/api/reports/flagged/email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({ detail: 'Unknown error' }));
+      throw new Error(err.detail || 'Request failed');
+    }
+    const data = await r.json();
+    showToast(`Email sent to ${data.to} — ${data.count} flagged call${data.count !== 1 ? 's' : ''}`);
+  } catch (err) {
+    showToast(`Email failed: ${err.message}`, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Send Email';
+  }
+}
 
 // ── Boot ──
 loadJobs();

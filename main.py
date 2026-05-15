@@ -5,6 +5,7 @@ GET  /api/jobs/{job_id}  → poll job status and fetch the report
 GET  /api/jobs           → list recent jobs
 GET  /health             → liveness probe
 """
+import io
 import json
 import uuid
 from typing import Optional
@@ -15,8 +16,9 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from config import SARVAM_API_KEY
+from config import SARVAM_API_KEY, VIOLATION_EMAIL_TO
 from database import create_job, get_job, get_job_by_caller_id, init_db, list_jobs, update_job
+from email_helper import send_email
 from qdrant_helper import delete_report, get_report, get_reports_by_filter, list_reports, get_agent_scores, get_all_agents_summary
 
 app = FastAPI(
@@ -213,6 +215,71 @@ async def transcribe_audio(
 
 
 # ── Qdrant report store ───────────────────────────────────────────────────────
+
+class FlaggedEmailRequest(BaseModel):
+    email: Optional[str] = None
+
+
+@app.post("/api/reports/flagged/email")
+def send_flagged_email(req: FlaggedEmailRequest = FlaggedEmailRequest()):
+    """Fetch all flagged reports from Qdrant and email a CSV summary."""
+    try:
+        records, _ = list_reports(limit=500)
+        flagged = [r for r in records if r.get("violations_found")]
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Qdrant error: {e}")
+
+    to = (req.email or "").strip() or VIOLATION_EMAIL_TO
+
+    # Build CSV
+    columns = [
+        "Caller Name", "Caller ID", "Agent Name", "Agent ID", "Category",
+        "Overall Score", "SOP Compliance", "Objection Handling",
+        "Call Checkpoints", "Wait Compliance", "Agent Sentiment",
+        "Customer Sentiment", "Call Outcome", "Knowledge Accuracy",
+        "Summary", "Recommendation", "Timestamp",
+    ]
+
+    def csv_val(v):
+        s = str(v) if v is not None else ""
+        return '"' + s.replace('"', '""') + '"'
+
+    lines = [",".join(csv_val(c) for c in columns)]
+    for r in flagged:
+        sc = r.get("scores") or {}
+        lines.append(",".join(csv_val(v) for v in [
+            r.get("caller_name", ""),
+            r.get("caller_id", ""),
+            r.get("agent_name", ""),
+            r.get("agent_id", ""),
+            r.get("category", ""),
+            r.get("compliance_score", ""),
+            sc.get("script_compliance", ""),
+            sc.get("objection_handling", ""),
+            sc.get("call_checkpoints", ""),
+            sc.get("wait_compliance", ""),
+            sc.get("agent_sentiment", ""),
+            sc.get("customer_sentiment", ""),
+            sc.get("call_outcome", ""),
+            sc.get("knowledge_accuracy", ""),
+            r.get("compliance_summary", ""),
+            r.get("recommendation", ""),
+            r.get("created_at", ""),
+        ]))
+
+    csv_body = "\n".join(lines)
+
+    try:
+        send_email(
+            to=to,
+            subject="VelocityAI — Flagged Calls Report",
+            body=csv_body,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Email send failed: {e}")
+
+    return {"sent": True, "count": len(flagged), "to": to}
+
 
 @app.get("/api/reports")
 def list_stored_reports(
