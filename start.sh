@@ -21,8 +21,8 @@ fi
 cleanup() {
   echo ""
   echo "Shutting down..."
-  kill "$SERVER_PID" "$WORKER_PID" 2>/dev/null || true
-  wait "$SERVER_PID" "$WORKER_PID" 2>/dev/null || true
+  kill "$SERVER_PID" "$CLAUDE_PID" 2>/dev/null || true
+  wait "$SERVER_PID" "$CLAUDE_PID" 2>/dev/null || true
   echo "Done."
 }
 trap cleanup SIGINT SIGTERM
@@ -35,12 +35,12 @@ SERVER_PID=$!
 # give the server a moment to bind the port
 sleep 2
 
-# --- start worker ---
-echo "Starting worker..."
-.venv/bin/python3 worker.py 2>&1 | sed 's/^/[worker] /' &
-WORKER_PID=$!
+# --- start claude controller ---
+echo "Starting Claude compliance controller..."
+bash open_claude.sh 2>&1 | sed 's/^/[claude] /' &
+CLAUDE_PID=$!
 
 echo "Pipeline is up. Press Ctrl+C to stop."
 echo ""
 
-wait "$SERVER_PID" "$WORKER_PID"
+wait "$SERVER_PID" "$CLAUDE_PID"
