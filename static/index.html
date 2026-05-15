@@ -472,6 +472,28 @@
 const API = '';  // same origin
 let pollTimer = null;
 let activeJobId = null;
+const pendingJobs = new Map(); // jobs submitted this session, not yet in Qdrant
+
+// Normalize flat Qdrant report payload → job-shaped object for renderReport()
+function qdrantToJob(r) {
+  return {
+    job_id: r.job_id,
+    status: 'completed',
+    category: r.category,
+    violations_found: r.violations_found,
+    agent_name: r.agent_name,
+    created_at: r.created_at,
+    report: {
+      job_id: r.job_id,
+      category: r.category,
+      violations_found: r.violations_found,
+      violations: r.violations || [],
+      compliance_score: r.compliance_score,
+      compliance_summary: r.compliance_summary,
+      recommendation: r.recommendation,
+    },
+  };
+}
 
 // ── Form submit ──────────────────────────────────────────────────────────────
 document.getElementById('submitForm').addEventListener('submit', async (e) => {
@@ -496,6 +518,12 @@ document.getElementById('submitForm').addEventListener('submit', async (e) => {
     if (!res.ok) throw new Error(await res.text());
     const job = await res.json();
     showToast(`Job submitted — ID: ${job.job_id.slice(0,8)}…`);
+    pendingJobs.set(job.job_id, {
+      job_id: job.job_id,
+      status: 'pending',
+      agent_name: document.getElementById('agentName').value.trim() || null,
+      created_at: new Date().toISOString().replace('Z', ''),
+    });
     watchJob(job.job_id);
     loadJobs();
   } catch (err) {
@@ -518,6 +546,7 @@ function watchJob(jobId) {
     loadJobs();
     if (job.status === 'completed' || job.status === 'failed') {
       clearInterval(pollTimer);
+      pendingJobs.delete(jobId);
     }
   }, 2000);
 }
@@ -530,13 +559,26 @@ async function fetchJob(id) {
   } catch { return null; }
 }
 
-// ── Load recent jobs list ────────────────────────────────────────────────────
+// ── Load recent jobs list (from shared Qdrant, merged with local pending) ────
 async function loadJobs() {
   try {
-    const r = await fetch(`${API}/api/jobs?limit=30`);
+    const r = await fetch(`${API}/api/reports?limit=30`);
     if (!r.ok) return;
-    const jobs = await r.json();
-    renderJobsList(jobs);
+    const data = await r.json();
+    const qdrantJobs = (data.reports || []).map(qdrantToJob);
+
+    // drop from pendingJobs anything that has landed in Qdrant
+    const qdrantIds = new Set(qdrantJobs.map(j => j.job_id));
+    for (const id of pendingJobs.keys()) {
+      if (qdrantIds.has(id)) pendingJobs.delete(id);
+    }
+
+    // merge local pending + Qdrant completed, newest first
+    const allJobs = [...Array.from(pendingJobs.values()), ...qdrantJobs]
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+      .slice(0, 30);
+
+    renderJobsList(allJobs);
   } catch {}
 }
 
@@ -551,15 +593,31 @@ function renderJobsList(jobs) {
     <div class="job-item ${j.job_id === activeJobId ? 'active' : ''}"
          onclick="loadJobById('${j.job_id}')">
       <div class="job-dot dot-${j.status}"></div>
-      <div class="job-agent">${j.report?.agent_name || document.getElementById('agentName').value || 'Unknown agent'}</div>
+      <div class="job-agent">${j.agent_name || 'Unknown agent'}</div>
       <div class="job-id">${j.job_id.slice(0,8)}</div>
       <div class="job-time">${timeAgo(j.created_at)}</div>
     </div>
   `).join('');
 }
 
+async function fetchReport(id) {
+  try {
+    const r = await fetch(`${API}/api/reports/${id}`);
+    if (!r.ok) return null;
+    return qdrantToJob(await r.json());
+  } catch { return null; }
+}
+
 async function loadJobById(id) {
   activeJobId = id;
+  // try Qdrant first (completed, shared across machines)
+  const report = await fetchReport(id);
+  if (report) {
+    renderReport(report);
+    loadJobs();
+    return;
+  }
+  // fall back to local SQLite (pending / processing jobs on this machine)
   const job = await fetchJob(id);
   if (!job) return;
   if (job.status === 'pending' || job.status === 'processing') {
