@@ -6,7 +6,7 @@ import uuid
 import httpx
 from openai import OpenAI
 from config import (
-    QDRANT_URL, QDRANT_COLLECTION, REPORTS_COLLECTION,
+    QDRANT_URL, QDRANT_COLLECTION, SOP_SEARCH_COLLECTION, REPORTS_COLLECTION,
     EMBEDDING_MODEL, EMBEDDING_DIM,
     OPENAI_API_KEY, OPENAI_API_BASE,
 )
@@ -79,14 +79,23 @@ def upsert_sop(category: str, title: str, content: str, rules: list[str],
 
 
 def search_sops(transcription: str, top_k: int = 3) -> list[dict]:
+    """Semantic search for compliance reference material.
+
+    Reads from SOP_SEARCH_COLLECTION (default: the indiamart_kb help
+    articles). KB articles have no `rules[]` field — compliance reasoning
+    runs against each hit's `content`. Falls back to `rules[]` when the
+    collection is the legacy indiamart_sops (so old behaviour still works
+    if SOP_SEARCH_COLLECTION is repointed there).
+    """
     vector = embed(transcription)
     r = _http_client().post(
-        f"/collections/{QDRANT_COLLECTION}/points/search",
+        f"/collections/{SOP_SEARCH_COLLECTION}/points/search",
         json={
             "vector": vector,
             "limit": top_k,
-            # Fetch only what the agent prompt needs — skip description and keywords
-            "with_payload": {"include": ["category", "title", "content", "rules"]},
+            "with_payload": {
+                "include": ["category", "folder", "title", "content", "rules"]
+            },
         },
     )
     r.raise_for_status()
@@ -96,10 +105,12 @@ def search_sops(transcription: str, top_k: int = 3) -> list[dict]:
         p = h["payload"]
         entry = {
             "category": p.get("category"),
+            "folder": p.get("folder"),
             "title": p.get("title"),
             "content": p.get("content"),
             "score": round(h["score"], 4),
-            # Rules only needed for the top hit — runner-ups are category context only
+            # Legacy SOPs carry rules[]; KB articles don't (reason over content).
+            # Rules only needed for the top hit — runner-ups are context only.
             "rules": p.get("rules", []) if i == 0 else [],
         }
         results.append(entry)

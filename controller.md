@@ -15,7 +15,7 @@ print(json.dumps(job) if job else 'NO_JOBS')
 
 If the output is `NO_JOBS`, print `NO_JOBS` and stop immediately. Do nothing else.
 
-## Step 2 — Embed and search SOPs
+## Step 2 — Embed and search the knowledge base
 
 Using the `transcription` field from the claimed job:
 
@@ -28,12 +28,25 @@ print(json.dumps(sops))
 "
 ```
 
+This searches the `indiamart_kb` collection. Each hit has `category`,
+`folder`, `title`, `content`, and `score`. The `content` field holds the
+full IndiaMART help/policy article — that is the compliance reference text.
+`rules[]` is normally empty for KB articles; only the legacy
+`indiamart_sops` collection populates it.
+
 ## Step 3 — Analyse violations
 
-Using the `rules[]` from the top SOP, check each rule against the transcription using language reasoning. For each violation record:
-- `rule` — exact rule text
+Derive the applicable expected behaviours from the **top hit's `content`**
+(use the runner-up hits as supporting context only). If `rules[]` is
+non-empty, treat each rule as an explicit expectation. Check the
+transcription against each expected behaviour using language reasoning.
+For each violation record:
+- `rule` — the specific expectation/policy point that was breached (quote or paraphrase from the article content; use the exact rule text if `rules[]` is present)
 - `description` — what went wrong
 - `evidence` — verbatim quote from the transcription
+
+Set `category` in the report to the top hit's `category` (a KB topic such
+as `BuyLead & Tender`).
 
 ## Step 4 — Compute compliance score
 

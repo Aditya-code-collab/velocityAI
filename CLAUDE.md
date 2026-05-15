@@ -6,7 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**VelocityAI** — IndiaMart SOP Compliance Checker. Accepts call transcriptions via REST API, queues them as jobs, and dispatches each job to a fresh `claude --print` subprocess (zero context between runs) that retrieves relevant SOPs from Qdrant, checks the transcription for violations, generates a structured report, and emails alerts when violations are found.
+**VelocityAI** — IndiaMart SOP Compliance Checker. Accepts call transcriptions via REST API, queues them as jobs, and dispatches each job to a fresh `claude --print` subprocess (zero context between runs) that retrieves relevant reference material from Qdrant, checks the transcription for violations, generates a structured report, and emails alerts when violations are found.
+
+Compliance search reads from the **`indiamart_kb`** collection by default (the ingested IndiaMART help knowledge base — see `velocityAI project/sync-pipeline/`), not the legacy 5-SOP `indiamart_sops` collection. This is controlled by `SOP_SEARCH_COLLECTION` and is reversible. Because KB articles have no `rules[]`, the controller reasons over each hit's `content` (article prose) instead of discrete rule strings.
 
 ## Commands
 
@@ -22,7 +24,12 @@ python3 -m venv .venv && source .venv/bin/activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Seed Qdrant with IndiaMart SOPs (run once, or after editing setup_sops.py)
+# Ingest the IndiaMART KB into the indiamart_kb collection (default search source)
+.venv/bin/python3 "velocityAI project/sync-pipeline/kb_ingest.py" --subdir "BuyLead & Tender"
+.venv/bin/python3 "velocityAI project/sync-pipeline/kb_ingest.py" --dry-run          # preview
+.venv/bin/python3 "velocityAI project/sync-pipeline/kb_ingest.py" --search "your q"   # smoke test
+
+# (Legacy) seed the 5-SOP indiamart_sops collection — only if SOP_SEARCH_COLLECTION=indiamart_sops
 .venv/bin/python3 setup_sops.py
 
 # Start API server (port 8001) — UI served at http://localhost:8001
@@ -75,8 +82,9 @@ POST /api/transcription
         │   flags: --allowedTools Bash --dangerously-skip-permissions
         │
         ├─ Step 1: claim next pending job from SQLite
-        ├─ Step 2: embed transcription → search Qdrant → top-3 SOPs
-        ├─ Step 3: language reasoning — check each rule against transcription
+        ├─ Step 2: embed transcription → search SOP_SEARCH_COLLECTION → top-3 hits
+        ├─ Step 3: language reasoning — derive expectations from top hit's
+        │           content (or rules[] if present) → check transcription
         ├─ Step 4: compute compliance_score (0–100)
         ├─ Step 5: persist report → SQLite + Qdrant (indiamart_reports)
         ├─ Step 6: send email alert if violations found
@@ -93,7 +101,32 @@ DELETE /api/reports/{job_id}  → remove a report                         (from 
 
 ## Qdrant — Store and Fetch
 
-### Collection: `indiamart_sops`
+### Collection: `indiamart_kb` (default compliance search source)
+
+The ingested IndiaMART help knowledge base. One markdown article = one point
+(no chunking — articles are short, self-contained answers). Ingested by
+`velocityAI project/sync-pipeline/kb_ingest.py`, which mirrors
+`qdrant_helper.py` conventions (raw `httpx`, LiteLLM embeddings, 1536-dim).
+IDs are `uuid5(relative_path)` so re-ingestion upserts in place.
+
+```
+vector  = embed(title + "\n\n" + content)   ← 1536-dim float array
+
+payload fields:
+  category       string   top-level KB folder, e.g. "BuyLead & Tender"
+  folder         string   subfolder, e.g. "BLNI", "Tenders"
+  title          string   article H1 (falls back to filename)
+  content        string   full markdown body — the compliance reference text
+  relative_path  string   path within IndiaMART-KB (used for the deterministic id)
+  source         string   always "freshdesk-kb"
+```
+
+KB articles have **no `rules[]`** — the controller reasons over `content`.
+Ingest a folder:  `python3 "velocityAI project/sync-pipeline/kb_ingest.py" --subdir "BuyLead & Tender"`
+(`--dry-run` to preview, `--search "q"` to smoke-test). Only the
+`BuyLead & Tender` subtree (99 articles) is ingested so far.
+
+### Collection: `indiamart_sops` (legacy — used only if `SOP_SEARCH_COLLECTION=indiamart_sops`)
 
 Each SOP is one Qdrant point:
 
@@ -136,10 +169,10 @@ Qdrant write failure is non-fatal — the SQLite record is always saved first.
 
 | Stage | Method |
 |-------|--------|
-| **Category selection** | Cosine similarity: `embed(transcription)` vs `embed(description)` in Qdrant |
-| **Rule violation check** | Claude language reasoning on each rule string vs full transcription |
+| **Topic selection** | Cosine similarity: `embed(transcription)` vs stored vectors in `SOP_SEARCH_COLLECTION` |
+| **Violation check** | Claude language reasoning: derive expected behaviour from the top hit's `content` (KB) or `rules[]` (legacy SOPs), check vs full transcription |
 
-`search_sops` returns top-3 hits but only passes `rules[]` from the top hit to the agent — runner-up rules are discarded immediately.
+`search_sops` (in `qdrant_helper.py`) queries `SOP_SEARCH_COLLECTION` and returns the top-3 hits with `category`, `folder`, `title`, `content`, `score`, and `rules` (empty for KB; only the top hit's rules are kept for legacy SOPs). Retrieval quality depends on which KB folders have been ingested — transcripts about an un-ingested topic will get weak, off-target hits.
 
 ## Frontend
 
@@ -169,14 +202,16 @@ To add a new field to the report, update `controller.md` (add the field to the J
 | `qdrant_helper.py` | Raw `httpx` REST calls to Qdrant + OpenAI embeddings via LiteLLM proxy; functions: `search_sops`, `upsert_sop`, `store_report`, `get_report`, `list_reports`, `delete_report`, `ensure_collection`, `ensure_reports_collection` |
 | `database.py` | SQLite helpers — `init_db`, `create_job`, `claim_next_pending`, `update_job`, `get_job`, `list_jobs` |
 | `email_helper.py` | CLI-callable SMTP sender: `python3 email_helper.py --to --subject --body` |
-| `setup_sops.py` | One-time seed — upserts 5 IndiaMart SOPs into Qdrant |
-| `config.py` | All env-var config via `python-dotenv`; exposes `PROJECT_DIR` |
+| `setup_sops.py` | One-time seed — upserts 5 IndiaMart SOPs into legacy `indiamart_sops` |
+| `config.py` | All env-var config via `python-dotenv`; exposes `PROJECT_DIR`, `SOP_SEARCH_COLLECTION` |
+| `velocityAI project/sync-pipeline/kb_ingest.py` | Ingests `IndiaMART-KB/<subdir>` markdown into the `indiamart_kb` collection (1 article = 1 point; idempotent) |
+| `velocityAI project/sync-pipeline/` | Freshdesk→markdown→Qdrant pipeline. **Note:** the older `qdrant_ingest.py`/`run_pipeline.py` use fastembed (384-dim) + qdrant-client against a *local* Qdrant — incompatible with the shared remote server. Use `kb_ingest.py` for the live collection. |
 
 ## External services
 
 | Service | URL | Purpose |
 |---------|-----|---------|
-| Qdrant | `http://34.47.255.166:80` | Vector store (collections: `indiamart_sops`, `indiamart_reports`) |
+| Qdrant | `http://34.47.255.166:80` | Vector store (collections: `indiamart_kb` ← search source, `indiamart_sops` legacy, `indiamart_reports`) |
 | LiteLLM proxy | `https://imllm.intermesh.net/v1` | Embeddings (`openai/text-embedding-3-large`, 1536-dim) |
 | Gmail SMTP | `smtp.gmail.com:587` | Violation email alerts |
 
@@ -200,8 +235,9 @@ To add a new field to the report, update `controller.md` (add the field to the J
 
 ```
 QDRANT_URL=http://34.47.255.166:80
-QDRANT_COLLECTION=indiamart_sops
-REPORTS_COLLECTION=indiamart_reports  # optional, default shown
+QDRANT_COLLECTION=indiamart_sops              # legacy SOP seed/upsert target
+SOP_SEARCH_COLLECTION=indiamart_kb            # optional, default shown — what search_sops reads
+REPORTS_COLLECTION=indiamart_reports          # optional, default shown
 OPENAI_API_KEY=<LiteLLM key>
 OPENAI_API_BASE=https://imllm.intermesh.net/v1
 EMBEDDING_MODEL=openai/text-embedding-3-large
@@ -217,7 +253,11 @@ CLAUDE_BIN=claude                # optional, path to claude binary
 
 ## Notes
 
+- The `claude` CLI must be installed and on PATH for the controller to run: `npm i -g @anthropic-ai/claude-code`. If missing, `open_claude.sh` exits immediately (exit 127, "command not found") and jobs sit in `pending` forever — the API/UI keep working, only analysis stalls.
 - `claude --print` reads auth from the system keychain — do **not** use `--bare`.
+- Compliance search source is `SOP_SEARCH_COLLECTION` (default `indiamart_kb`). Set it to `indiamart_sops` in `.env` to restore the original rule-based behaviour — no code change needed.
+- Only the `BuyLead & Tender` KB subtree is ingested. Ingest more before relying on this broadly: `python3 "velocityAI project/sync-pipeline/kb_ingest.py" --subdir "<folder>"`.
+- KB upserts must use small batches (≤8 points) — the Qdrant server rejects large request bodies with HTTP 413.
 - Each `claude --print` run starts with zero context — no memory of previous jobs. All state is in SQLite and Qdrant.
 - `qdrant_helper.py` uses raw `httpx` calls — do not switch to the `qdrant-client` library (v1.18 is incompatible with server v1.9.2).
 - Qdrant must be addressed as `http://34.47.255.166:80` (explicit port 80) — omitting it causes the client to append `:6333`.

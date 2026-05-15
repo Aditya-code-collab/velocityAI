@@ -5,6 +5,10 @@ load_dotenv()
 
 QDRANT_URL = os.getenv("QDRANT_URL", "http://34.47.255.166:80")
 QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "indiamart_sops")
+# Collection that compliance search reads from. Repointed to the KB so
+# violation checks reason over the full IndiaMART help content, not just
+# the 5 seeded SOPs. Set back to "indiamart_sops" to restore old behaviour.
+SOP_SEARCH_COLLECTION = os.getenv("SOP_SEARCH_COLLECTION", "indiamart_kb")
 REPORTS_COLLECTION = os.getenv("REPORTS_COLLECTION", "indiamart_reports")
 
 # LiteLLM proxy — same setup as buyleadagent
