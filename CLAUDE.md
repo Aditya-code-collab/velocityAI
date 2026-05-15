@@ -41,10 +41,19 @@ pip install -r requirements.txt
 # Start claude controller (separate terminal)
 bash open_claude.sh
 
-# Smoke test — all four fields are required
+# Smoke test — text transcription
 curl -X POST http://localhost:8001/api/transcription \
   -H "Content-Type: application/json" \
   -d '{"transcription": "call text", "agent_name": "Rahul Sharma", "agent_id": "AGT-001", "caller_id": "+91 98765 43210", "caller_name": "Amit Kumar"}'
+
+# Smoke test — audio transcription (Sarvam AI → transcript → compliance pipeline)
+curl -X POST http://localhost:8001/api/transcribe-audio \
+  -F "file=@call.wav" \
+  -F "agent_name=Rahul Sharma" \
+  -F "agent_id=AGT-001" \
+  -F "caller_id=+91 98765 43210" \
+  -F "caller_name=Amit Kumar" \
+  -F "language_code=hi-IN"    # optional; default=unknown (auto-detect)
 
 curl http://localhost:8001/api/jobs/<job_id>
 curl http://localhost:8001/api/jobs          # list recent 20 jobs (local SQLite)
@@ -66,6 +75,15 @@ ps aux | grep "open_claude\|claude --print" | grep -v grep
 ## Architecture
 
 ```
+POST /api/transcribe-audio  (multipart: file + agent_name, agent_id, caller_id, caller_name, [language_code])
+        │
+        ▼
+  Sarvam AI Saarika v2.5    ← STT optimised for Indian languages / Hinglish / telephony
+        │   api.sarvam.ai/speech-to-text  · api-subscription-key header
+        │   returns transcript string
+        │
+        ▼  (feeds into same pipeline as ↓)
+
 POST /api/transcription  (requires: transcription, agent_name, agent_id, caller_id, caller_name)
         │
         ├─ If caller_id already exists → reuse same job_id, reset to pending
@@ -196,9 +214,12 @@ Filtering via `GET /api/reports`:
 - Shows agent name + caller ID per row; red dot for flagged, green for compliant
 
 **Key JS behaviours:**
-- On submit → `POST /api/transcription` → starts a `setInterval` polling `GET /api/jobs/{id}` every 2s until `completed` or `failed`
+- **Input mode tabs:** "📄 Text / File" (default) or "🎙️ Audio" — switches between two drop zones
+- Text mode: on submit → `POST /api/transcription` (JSON) → polls `GET /api/jobs/{id}` every 2s
+- Audio mode: on submit → `POST /api/transcribe-audio` (multipart FormData) → shows "Transcribing audio…" spinner → on success switches to "Analysing transcription…" spinner and polls as normal
+- Text drop zone (`#dropZone`) accepts `.txt`, `.log`, `.csv`; reads with `FileReader` and populates the textarea
+- Audio drop zone (`#audioDrop`) accepts `.wav`, `.mp3`, `.m4a`, `.ogg`, `.flac`, `.webm`, `.aac`, `.amr`; holds `File` reference in `selectedAudioFile`
 - Sidebar reads from `GET /api/reports` (Qdrant, shared across machines); pending local jobs shown via `pendingJobs` map until they land in Qdrant
-- File drop zone (`#dropZone`) accepts `.txt`, `.log`, `.csv` via click-browse or drag-and-drop; reads with `FileReader` and populates the textarea
 - Recent jobs list auto-refreshes every 10s
 - Score ring colour: green ≥ 80, amber ≥ 50, red < 50
 - Clicking a job loads full analysis history (all runs for that caller)
@@ -229,6 +250,7 @@ To add a new field to the report, update `controller.md` (add the field to the J
 | Qdrant | `http://34.47.255.166:80` | Vector store (collections: `indiamart_kb` ← search source, `indiamart_sops` legacy, `indiamart_reports`) |
 | LiteLLM proxy | `https://imllm.intermesh.net/v1` | Embeddings (`openai/text-embedding-3-large`, 1536-dim) |
 | Gmail SMTP | `smtp.gmail.com:587` | Violation email alerts |
+| Sarvam AI | `https://api.sarvam.ai` | Speech-to-text (Saarika v2.5) — Indian languages, Hinglish, telephony audio |
 
 ## Report schema
 
@@ -266,6 +288,7 @@ SMTP_PORT=587                    # optional, default shown
 VIOLATION_EMAIL_TO=yashwantsinghchandra258@gmail.com
 DATABASE_PATH=jobs.db            # optional, default shown
 CLAUDE_BIN=claude                # optional, path to claude binary
+SARVAM_API_KEY=<Sarvam AI API key>   # required for POST /api/transcribe-audio
 ```
 
 ## Notes
@@ -282,3 +305,5 @@ CLAUDE_BIN=claude                # optional, path to claude binary
 - Same `caller_id` across submissions → same `job_id` reused; each new analysis appends to the report array in SQLite and creates a new Qdrant point.
 - The sidebar reads from Qdrant (`/api/reports`) so reports are visible on all machines. Locally-submitted pending jobs appear via the in-memory `pendingJobs` map until processing completes.
 - A stale `claude --print` process (from a previous controller run) will compete for jobs — always run `./stop_all.sh` before starting a new controller.
+- `POST /api/transcribe-audio` calls Sarvam AI synchronously before queuing the job — if the audio is very long (>30 min) or the Sarvam API is slow, the HTTP request will block. For very long recordings use Sarvam's Batch API instead (not yet wired up).
+- Sarvam AI `language_code=unknown` enables automatic language detection — fine for mixed Hindi/English calls. Pass `hi-IN` or `en-IN` explicitly if the language is known.

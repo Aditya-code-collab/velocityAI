@@ -9,11 +9,13 @@ import json
 import uuid
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException
+import httpx
+from fastapi import FastAPI, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from config import SARVAM_API_KEY
 from database import create_job, get_job, get_job_by_caller_id, init_db, list_jobs, update_job
 from qdrant_helper import delete_report, get_report, get_reports_by_filter, list_reports
 
@@ -142,6 +144,72 @@ def get_job_status(job_id: str):
 def list_recent_jobs(limit: int = 20):
     """List the most recent jobs (default 20)."""
     return [_row_to_response(r) for r in list_jobs(limit)]
+
+
+# ── Sarvam AI — audio transcription ─────────────────────────────────────────
+
+SARVAM_STT_URL = "https://api.sarvam.ai/speech-to-text"
+
+
+@app.post("/api/transcribe-audio", response_model=JobResponse, status_code=202)
+async def transcribe_audio(
+    file: UploadFile,
+    agent_name: str = Form(...),
+    agent_id: str = Form(...),
+    caller_id: str = Form(...),
+    caller_name: str = Form(...),
+    language_code: str = Form("unknown"),
+):
+    """Accept an audio file, transcribe it via Sarvam AI, then queue the result for compliance analysis."""
+    if not SARVAM_API_KEY:
+        raise HTTPException(status_code=503, detail="SARVAM_API_KEY is not configured")
+
+    audio_bytes = await file.read()
+    if not audio_bytes:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
+    async with httpx.AsyncClient(timeout=120) as client:
+        try:
+            resp = await client.post(
+                SARVAM_STT_URL,
+                headers={"api-subscription-key": SARVAM_API_KEY},
+                files={"file": (file.filename or "audio", audio_bytes, file.content_type or "audio/wav")},
+                data={"model": "saarika:v2.5", "language_code": language_code},
+            )
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(status_code=502, detail=f"Sarvam STT error {e.response.status_code}: {e.response.text}")
+        except httpx.RequestError as e:
+            raise HTTPException(status_code=502, detail=f"Sarvam STT unreachable: {e}")
+
+    transcript = resp.json().get("transcript", "").strip()
+    if not transcript:
+        raise HTTPException(status_code=502, detail="Sarvam STT returned an empty transcript")
+
+    # reuse existing job when caller_id already exists
+    existing = get_job_by_caller_id(caller_id)
+    if existing:
+        update_job(
+            existing["id"],
+            transcription=transcript,
+            caller_name=caller_name,
+            agent_name=agent_name,
+            agent_id=agent_id,
+            status="pending",
+            error=None,
+        )
+        return JobResponse(job_id=existing["id"], status="pending")
+
+    job_id = str(uuid.uuid4())
+    create_job(
+        job_id=job_id,
+        transcription=transcript,
+        caller_id=caller_id,
+        caller_name=caller_name,
+        agent_name=agent_name,
+        agent_id=agent_id,
+    )
+    return JobResponse(job_id=job_id, status="pending")
 
 
 # ── Qdrant report store ───────────────────────────────────────────────────────

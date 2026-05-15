@@ -23,6 +23,8 @@ SMTP_USER = os.getenv("SMTP_USER", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 VIOLATION_EMAIL_TO = os.getenv("VIOLATION_EMAIL_TO", "yashwantsinghchandra258@gmail.com")
 
+SARVAM_API_KEY = os.getenv("SARVAM_API_KEY", "")
+
 DATABASE_PATH = os.getenv("DATABASE_PATH", "jobs.db")
 WORKER_POLL_INTERVAL = int(os.getenv("WORKER_POLL_INTERVAL", "5"))
 

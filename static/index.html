@@ -106,6 +106,42 @@
   input:focus, textarea:focus { border-color: var(--accent); }
   textarea { min-height: 160px; line-height: 1.5; }
 
+  /* ── Input mode tabs ── */
+  .input-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .input-tab {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    color: var(--muted);
+    background: var(--surface2);
+    transition: background 0.15s, color 0.15s;
+    border-right: 1px solid var(--border);
+  }
+  .input-tab:last-child { border-right: none; }
+  .input-tab:hover { color: var(--text); }
+  .input-tab.active { background: var(--accent); color: #fff; }
+
+  .audio-info {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 8px;
+    line-height: 1.5;
+    padding: 8px 10px;
+    background: rgba(108,99,255,0.07);
+    border-radius: 6px;
+    border: 1px solid rgba(108,99,255,0.15);
+  }
+
   /* ── Drop zone ── */
   .drop-zone {
     border: 2px dashed var(--border);
@@ -468,19 +504,38 @@
     <div class="form-area">
       <form id="submitForm">
         <div class="form-row">
-          <label>Call Transcription *</label>
-
-          <div class="drop-zone" id="dropZone">
-            <input type="file" id="fileInput" accept=".txt,.text,.log,.csv" />
-            <div class="dz-icon">📂</div>
-            <div class="dz-text"><b>Click to browse</b> or drag &amp; drop a file</div>
-            <div class="dz-text">.txt · .log · .csv</div>
-            <div class="dz-filename" id="dzFilename" style="display:none"></div>
+          <label>Input Mode</label>
+          <div class="input-tabs">
+            <div class="input-tab active" id="tabModeText"  onclick="switchInputMode('text')">📄 Text / File</div>
+            <div class="input-tab"        id="tabModeAudio" onclick="switchInputMode('audio')">🎙️ Audio</div>
           </div>
 
-          <div class="or-divider">or paste manually</div>
+          <!-- Text mode -->
+          <div id="textInputMode">
+            <div class="drop-zone" id="dropZone">
+              <input type="file" id="fileInput" accept=".txt,.text,.log,.csv" />
+              <div class="dz-icon">📂</div>
+              <div class="dz-text"><b>Click to browse</b> or drag &amp; drop a file</div>
+              <div class="dz-text">.txt · .log · .csv</div>
+              <div class="dz-filename" id="dzFilename" style="display:none"></div>
+            </div>
+            <div class="or-divider">or paste manually</div>
+            <textarea id="transcription" placeholder="Paste the full call transcript here…"></textarea>
+          </div>
 
-          <textarea id="transcription" placeholder="Paste the full call transcript here…" required></textarea>
+          <!-- Audio mode -->
+          <div id="audioInputMode" style="display:none">
+            <div class="drop-zone" id="audioDrop">
+              <input type="file" id="audioInput" accept=".wav,.mp3,.m4a,.ogg,.flac,.webm,.aac,.amr,.mp4" />
+              <div class="dz-icon">🎙️</div>
+              <div class="dz-text"><b>Click to browse</b> or drag &amp; drop audio</div>
+              <div class="dz-text">.wav · .mp3 · .m4a · .ogg · .flac · .webm</div>
+              <div class="dz-filename" id="audioFilename" style="display:none"></div>
+            </div>
+            <div class="audio-info">
+              Audio will be transcribed via <b>Sarvam AI Saarika v2.5</b> — optimised for Indian languages &amp; Hinglish. Supports up to ~30 min per file.
+            </div>
+          </div>
         </div>
         <div class="row2">
           <div class="form-row">
@@ -553,6 +608,16 @@ let activeJobId = null;
 const pendingJobs = new Map(); // jobs submitted this session, not yet in Qdrant
 let activeFilter = 'all'; // 'all' | 'flagged'
 let cachedJobs = [];      // last full job list for re-filtering without re-fetching
+let inputMode = 'text';   // 'text' | 'audio'
+let selectedAudioFile = null;
+
+function switchInputMode(mode) {
+  inputMode = mode;
+  document.getElementById('textInputMode').style.display  = mode === 'text'  ? '' : 'none';
+  document.getElementById('audioInputMode').style.display = mode === 'audio' ? '' : 'none';
+  document.getElementById('tabModeText').classList.toggle('active',  mode === 'text');
+  document.getElementById('tabModeAudio').classList.toggle('active', mode === 'audio');
+}
 
 // Normalize flat Qdrant report payload → job-shaped object for renderReport()
 function qdrantToJob(r) {
@@ -581,12 +646,10 @@ function qdrantToJob(r) {
 // ── Form submit ──────────────────────────────────────────────────────────────
 document.getElementById('submitForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const text = document.getElementById('transcription').value.trim();
   const agentName  = document.getElementById('agentName').value.trim();
   const agentId    = document.getElementById('agentId').value.trim();
   const callerId   = document.getElementById('callerId').value.trim();
   const callerName = document.getElementById('callerName').value.trim();
-  if (!text)       { showToast('Transcription is required', true); return; }
   if (!agentName)  { showToast('Agent Name is required', true); return; }
   if (!agentId)    { showToast('Agent ID is required', true); return; }
   if (!callerId)   { showToast('Caller ID is required', true); return; }
@@ -594,32 +657,29 @@ document.getElementById('submitForm').addEventListener('submit', async (e) => {
 
   const btn = document.getElementById('submitBtn');
   btn.disabled = true;
-  btn.textContent = '⏳ Submitting…';
 
+  if (inputMode === 'audio') {
+    if (!selectedAudioFile) { showToast('Please select an audio file', true); btn.disabled = false; return; }
+    await submitAudio(selectedAudioFile, agentName, agentId, callerId, callerName, btn);
+  } else {
+    const text = document.getElementById('transcription').value.trim();
+    if (!text) { showToast('Transcription is required', true); btn.disabled = false; return; }
+    await submitText(text, agentName, agentId, callerId, callerName, btn);
+  }
+});
+
+async function submitText(text, agentName, agentId, callerId, callerName, btn) {
+  btn.textContent = '⏳ Submitting…';
   try {
     const res = await fetch(`${API}/api/transcription`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        transcription: text,
-        agent_name: agentName,
-        agent_id: agentId,
-        caller_id: callerId,
-        caller_name: callerName,
-      }),
+      body: JSON.stringify({ transcription: text, agent_name: agentName, agent_id: agentId, caller_id: callerId, caller_name: callerName }),
     });
     if (!res.ok) throw new Error(await res.text());
     const job = await res.json();
     showToast(`Job submitted — ID: ${job.job_id.slice(0,8)}…`);
-    pendingJobs.set(job.job_id, {
-      job_id: job.job_id,
-      status: 'pending',
-      agent_name: agentName,
-      agent_id: agentId,
-      caller_id: callerId,
-      caller_name: callerName,
-      created_at: new Date().toISOString().replace('Z', ''),
-    });
+    pendingJobs.set(job.job_id, { job_id: job.job_id, status: 'pending', agent_name: agentName, agent_id: agentId, caller_id: callerId, caller_name: callerName, created_at: new Date().toISOString().replace('Z', '') });
     watchJob(job.job_id);
     loadJobs();
   } catch (err) {
@@ -628,7 +688,33 @@ document.getElementById('submitForm').addEventListener('submit', async (e) => {
     btn.disabled = false;
     btn.textContent = '▶ Run Compliance Check';
   }
-});
+}
+
+async function submitAudio(file, agentName, agentId, callerId, callerName, btn) {
+  btn.textContent = '🎙️ Transcribing audio…';
+  showTranscribingSpinner();
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('agent_name', agentName);
+  fd.append('agent_id', agentId);
+  fd.append('caller_id', callerId);
+  fd.append('caller_name', callerName);
+  try {
+    const res = await fetch(`${API}/api/transcribe-audio`, { method: 'POST', body: fd });
+    if (!res.ok) throw new Error(await res.text());
+    const job = await res.json();
+    showToast(`Audio transcribed — analysing… ID: ${job.job_id.slice(0,8)}…`);
+    pendingJobs.set(job.job_id, { job_id: job.job_id, status: 'pending', agent_name: agentName, agent_id: agentId, caller_id: callerId, caller_name: callerName, created_at: new Date().toISOString().replace('Z', '') });
+    watchJob(job.job_id);
+    loadJobs();
+  } catch (err) {
+    showToast(`Error: ${err.message}`, true);
+    document.getElementById('resultArea').innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>Submit a transcription to see the compliance report</p></div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '▶ Run Compliance Check';
+  }
+}
 
 // ── Poll a job ───────────────────────────────────────────────────────────────
 function watchJob(jobId) {
@@ -795,6 +881,15 @@ async function loadJobById(id) {
 }
 
 // ── Render ───────────────────────────────────────────────────────────────────
+function showTranscribingSpinner() {
+  document.getElementById('resultArea').innerHTML = `
+    <div class="spinner-wrap">
+      <div class="spinner"></div>
+      <div class="spinner-label">Transcribing audio via Sarvam AI…</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">This may take a few seconds</div>
+    </div>`;
+}
+
 function showSpinner(jobId) {
   document.getElementById('resultArea').innerHTML = `
     <div class="spinner-wrap">
@@ -950,8 +1045,8 @@ function showToast(msg, isError = false) {
   setTimeout(() => t.classList.remove('show'), 3500);
 }
 
-// ── File upload / drag-and-drop ──────────────────────────────────────────────
-const dropZone = document.getElementById('dropZone');
+// ── Text file drag-and-drop ──────────────────────────────────────────────────
+const dropZone  = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
 const dzFilename = document.getElementById('dzFilename');
 
@@ -968,16 +1063,34 @@ function loadFile(file) {
 }
 
 fileInput.addEventListener('change', (e) => loadFile(e.target.files[0]));
-
-dropZone.addEventListener('dragover', (e) => {
-  e.preventDefault();
-  dropZone.classList.add('dragover');
-});
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('dragover',  (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('dragover'));
 dropZone.addEventListener('drop', (e) => {
   e.preventDefault();
   dropZone.classList.remove('dragover');
   loadFile(e.dataTransfer.files[0]);
+});
+
+// ── Audio file drag-and-drop ─────────────────────────────────────────────────
+const audioDrop     = document.getElementById('audioDrop');
+const audioInput    = document.getElementById('audioInput');
+const audioFilename = document.getElementById('audioFilename');
+
+function loadAudioFile(file) {
+  if (!file) return;
+  selectedAudioFile = file;
+  audioFilename.textContent = '✓ ' + file.name + ' (' + (file.size / 1024 / 1024).toFixed(1) + ' MB)';
+  audioFilename.style.display = 'block';
+  showToast(`Audio ready: ${file.name}`);
+}
+
+audioInput.addEventListener('change', (e) => loadAudioFile(e.target.files[0]));
+audioDrop.addEventListener('dragover',  (e) => { e.preventDefault(); audioDrop.classList.add('dragover'); });
+audioDrop.addEventListener('dragleave', ()  => audioDrop.classList.remove('dragover'));
+audioDrop.addEventListener('drop', (e) => {
+  e.preventDefault();
+  audioDrop.classList.remove('dragover');
+  loadAudioFile(e.dataTransfer.files[0]);
 });
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
