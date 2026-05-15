@@ -24,12 +24,14 @@ pip install -r requirements.txt
 # Start worker (separate terminal)
 .venv/bin/python3 worker.py
 
-# Quick smoke test
+# Smoke test
 curl -X POST http://localhost:8001/api/transcription \
   -H "Content-Type: application/json" \
-  -d '{"transcription": "your call text here", "agent_name": "Test Agent"}'
+  -d '{"transcription": "your call text here", "agent_name": "Test Agent", "caller_id": "optional"}'
 
 curl http://localhost:8001/api/jobs/<job_id>
+curl http://localhost:8001/api/jobs          # list recent 20 jobs
+curl http://localhost:8001/health            # liveness probe
 ```
 
 ## Architecture
@@ -48,7 +50,8 @@ POST /api/transcription
         ├─ 3. build prompt         → agent_prompt.py
         │
         ▼
-  claude --print subprocess  (new shell per job)
+  claude --print subprocess  (new process per job, 300s timeout)
+        │   flags: --allowedTools Bash --dangerously-skip-permissions
         │
         ├─ picks best-matching SOP category
         ├─ checks each rule against transcription (language reasoning, not vector search)
@@ -62,105 +65,49 @@ POST /api/transcription
 GET /api/jobs/{job_id}  → report + violations + compliance_score
 ```
 
+**Important:** Only run one worker at a time. `claim_next_pending()` in `database.py` uses a read-then-update pattern that is not safe for concurrent workers under SQLite.
+
 ## Qdrant — Store and Fetch
 
-### What is stored per SOP point
-
-Each SOP is stored as one Qdrant point with a **vector** and a **payload**:
+Each SOP is one Qdrant point:
 
 ```
-vector  = embed(description)          ← 1536-dim float array (never fetched back)
+vector  = embed(description)          ← 1536-dim float array
 
-payload fields stored:
-  category     string   slug: catalog_addition | catalog_deletion |
-                              subscription_sales | lead_management | payment_collection
+payload fields:
+  category     string   catalog_addition | catalog_deletion |
+                        subscription_sales | lead_management | payment_collection
   title        string   human-readable SOP name
-  content      string   2–3 sentence overview of the SOP's purpose
-  description  string   full embedding text: title + overview + rules (numbered) +
-                        representative call phrases — this is what was embedded
-  rules        string[] individual enforceable rule strings (7–9 per SOP)
-  keywords     string[] trigger word hints (stored, not used in search)
+  content      string   2–3 sentence overview
+  description  string   full embedding text (title + overview + rules + call phrases)
+  rules        string[] enforceable rule strings (7–9 per SOP)
+  keywords     string[] stored but not used in search
 ```
-
-### Why rules appear in two places
-
-The same rule text is stored twice, serving different purposes:
-
-| Location | Format | Used for |
-|----------|--------|----------|
-| Inside `description` | Plain numbered text | Baked into the embedding vector → helps match transcriptions that mention rule-related phrases |
-| `rules` list | Structured string[] | Fetched after search → passed line-by-line to the Claude agent for violation checking |
-
-### Write path (`setup_sops.py` → `upsert_sop`)
-
-```
-description field (title + overview + rules as text + call phrases)
-        │
-        ▼
-embed(description)  →  1536-dim vector  →  stored in Qdrant
-payload (category, title, content, description, rules, keywords)  →  stored in Qdrant
-```
-
-### Read path (`worker.py` → `search_sops`)
-
-```
-transcription text
-        │
-        ▼
-embed(transcription)  →  1536-dim vector
-        │
-        ▼
-POST /collections/indiamart_sops/points/search
-  { vector: [...], limit: 3,
-    with_payload: { include: [category, title, content, rules] } }
-        │         ↑ description and keywords excluded — not needed after indexing
-        ▼
-cosine similarity against all 5 stored SOP vectors
-        │
-        ▼
-top-3 hits returned:
-  hit #1  category + title + content + rules[]   ← full rules for violation check
-  hit #2  category + title + content + rules[]   ← rules stripped in Python (not used)
-  hit #3  category + title + content + rules[]   ← rules stripped in Python (not used)
-```
-
-Runner-up rules are fetched from Qdrant but immediately discarded in `search_sops` — only the top hit's rules are passed to the agent.
 
 ### Two-stage matching
 
-| Stage | Input compared | Method |
-|-------|---------------|--------|
-| **Category selection** | `embed(transcription)` vs `embed(description)` for each SOP | Cosine similarity in Qdrant |
-| **Rule violation check** | Each rule string vs full transcription text | Claude language reasoning inside `claude --print` subprocess |
+| Stage | Method |
+|-------|--------|
+| **Category selection** | Cosine similarity: `embed(transcription)` vs `embed(description)` in Qdrant |
+| **Rule violation check** | Claude language reasoning on each rule string vs full transcription |
 
-Vector search only answers *"which SOP category does this call belong to?"* Rule-by-rule checking is done entirely by Claude after the category is selected.
+`search_sops` returns top-3 hits but only passes `rules[]` from the top hit to the agent — runner-up rules are discarded immediately.
 
-## What the Claude agent receives in its prompt
+## What the Claude agent receives
 
 ```
-=== CALL TRANSCRIPTION ===
-<raw transcription text>
-
-=== RETRIEVED SOPs ===
-### MATCHED SOP: <title>
-Category: <category>  |  Relevance score: <score>
-<content — 2-sentence overview>
-Rules to check:
-  1. <rule>
-  2. <rule>
-  ...
-
-### Other candidate categories (not selected): <cat2> (score X), <cat3> (score Y)
+=== JOB ID ===  /  === CALL TRANSCRIPTION ===  /  === RETRIEVED SOPs ===
+  → top SOP: title, category, score, content, numbered rules
+  → runner-up categories (label + score only, for category confirmation)
 
 === INSTRUCTIONS ===
-1. Confirm the best-matching category
-2. Check each rule against the transcription
-3. For every violation: rule broken + what went wrong + direct quote as evidence
-4. Compute compliance_score (0-100)
-5. Write summary and recommendation
+  1. Confirm best-matching category
+  2. Check each rule against transcription
+  3. For violations: rule + what went wrong + verbatim quote as evidence
+  4. Compute compliance_score (0–100)
+  5. Write summary and recommendation
 
-=== EMAIL ===
-<pre-filled bash command — agent runs it via Bash tool if violations found>
+=== EMAIL === (pre-filled bash command — agent runs only if violations found)
 
 === OUTPUT FORMAT ===
 COMPLIANCE_REPORT_START
@@ -168,32 +115,30 @@ COMPLIANCE_REPORT_START
 COMPLIANCE_REPORT_END
 ```
 
+Worker parses the report using `COMPLIANCE_REPORT_START/END` markers, with a fallback regex that grabs the last `{..."category"...}` block if markers are absent.
+
 ## Key files
 
 | File | Role |
 |------|------|
-| `main.py` | FastAPI app — `/api/transcription`, `/api/jobs/{id}`, `/api/jobs` |
-| `worker.py` | Polls SQLite, spawns `claude --print` subprocess per job |
-| `agent_prompt.py` | Builds the compliance analysis prompt for the Claude agent |
+| `main.py` | FastAPI app — `POST /api/transcription`, `GET /api/jobs/{id}`, `GET /api/jobs`, `GET /health` |
+| `worker.py` | Polls SQLite every 5s, spawns `claude --print` subprocess per job |
+| `agent_prompt.py` | Builds the full compliance analysis prompt |
 | `qdrant_helper.py` | Raw `httpx` REST calls to Qdrant + OpenAI embeddings via LiteLLM proxy |
-| `database.py` | SQLite helpers (`init_db`, `create_job`, `update_job`, etc.) |
-| `email_helper.py` | CLI-callable SMTP sender (`python3 email_helper.py --to --subject --body`) |
-| `setup_sops.py` | One-time seed script — upserts 5 IndiaMart SOPs into Qdrant |
-| `config.py` | All env-var config loaded via `python-dotenv` |
+| `database.py` | SQLite helpers — `init_db`, `create_job`, `claim_next_pending`, `update_job`, `get_job`, `list_jobs` |
+| `email_helper.py` | CLI-callable SMTP sender: `python3 email_helper.py --to --subject --body` |
+| `setup_sops.py` | One-time seed — upserts 5 IndiaMart SOPs into Qdrant |
+| `config.py` | All env-var config via `python-dotenv`; exposes `PROJECT_DIR` |
 
 ## External services
 
 | Service | URL | Purpose |
 |---------|-----|---------|
-| Qdrant | `http://34.47.255.166:80` | Vector store for SOPs (collection: `indiamart_sops`) |
+| Qdrant | `http://34.47.255.166:80` | Vector store (collection: `indiamart_sops`) |
 | LiteLLM proxy | `https://imllm.intermesh.net/v1` | Embeddings (`openai/text-embedding-3-large`, 1536-dim) |
 | Gmail SMTP | `smtp.gmail.com:587` | Violation email alerts |
 
-## SOP categories
-
-`catalog_addition` · `catalog_deletion` · `subscription_sales` · `lead_management` · `payment_collection`
-
-## Report schema (output from Claude agent)
+## Report schema
 
 ```json
 {
@@ -201,9 +146,9 @@ COMPLIANCE_REPORT_END
   "category": "subscription_sales",
   "violations_found": true,
   "violations": [
-    { "rule": "...", "description": "...", "evidence": "<verbatim quote from transcript>" }
+    { "rule": "...", "description": "...", "evidence": "<verbatim quote>" }
   ],
-  "compliance_score": 0-100,
+  "compliance_score": 0,
   "compliance_summary": "...",
   "recommendation": "..."
 }
@@ -220,14 +165,18 @@ EMBEDDING_MODEL=openai/text-embedding-3-large
 EMBEDDING_DIM=1536
 SMTP_USER=yashwantsinghchandra258@gmail.com
 SMTP_PASSWORD=<Gmail app password>
+SMTP_HOST=smtp.gmail.com         # optional, default shown
+SMTP_PORT=587                    # optional, default shown
 VIOLATION_EMAIL_TO=yashwantsinghchandra258@gmail.com
-WORKER_POLL_INTERVAL=5
+DATABASE_PATH=jobs.db            # optional, default shown
+WORKER_POLL_INTERVAL=5           # optional, seconds
+CLAUDE_BIN=claude                # optional, path to claude binary
 ```
 
 ## Notes
 
-- The `claude --print` subprocess reads auth from the system keychain — do **not** use `--bare`.
-- Qdrant client v1.18 is incompatible with server v1.9.2; `qdrant_helper.py` uses raw `httpx` calls to avoid this — do not switch back to the `qdrant-client` library.
-- Qdrant must be addressed as `http://34.47.255.166:80` (explicit port 80) — omitting the port causes the client to append `:6333` by default.
-- Email requires a Gmail **App Password** (not the account password). Enable: Google Account → Security → 2-Step Verification → App passwords.
-- To re-seed SOPs: delete the collection first (`curl -X DELETE http://34.47.255.166/collections/indiamart_sops`) then run `setup_sops.py`.
+- `claude --print` reads auth from the system keychain — do **not** use `--bare`.
+- `qdrant_helper.py` uses raw `httpx` calls — do not switch to the `qdrant-client` library (v1.18 is incompatible with server v1.9.2).
+- Qdrant must be addressed as `http://34.47.255.166:80` (explicit port 80) — omitting it causes the client to append `:6333`.
+- Email requires a Gmail **App Password**: Google Account → Security → 2-Step Verification → App passwords.
+- To re-seed SOPs: `curl -X DELETE http://34.47.255.166:80/collections/indiamart_sops` then `python3 setup_sops.py`.

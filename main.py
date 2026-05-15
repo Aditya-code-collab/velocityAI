@@ -10,6 +10,8 @@ import uuid
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from database import create_job, get_job, init_db, list_jobs
@@ -21,9 +23,17 @@ app = FastAPI(
 )
 
 
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
 @app.on_event("startup")
 def startup():
     init_db()
+
+
+@app.get("/")
+def root():
+    return FileResponse("static/index.html")
 
 
 # ── request / response models ────────────────────────────────────────────────
