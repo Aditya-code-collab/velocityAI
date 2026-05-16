@@ -112,8 +112,9 @@ POST /api/transcription  (requires: transcription, agent_name, agent_id, caller_
         │
         ├─ Step 1: claim next pending job from SQLite
         ├─ Step 2: embed transcription → search SOP_SEARCH_COLLECTION → top-5 hits
-        │           KB relevance check: top-hit score < 0.60 → prepend "No matching
-        │           SOP found — KB outdated/incomplete" to affected score_reasons
+        │           KB relevance check: top-hit score ≤ 0.60 → mark sop_outdated=true,
+        │           cap script_compliance at 50, prepend "No matching SOP found — KB
+        │           outdated/incomplete" to affected score_reasons
         ├─ Step 3: analyse transcript across 8 scoring dimensions (0–100 each):
         │           SOP compliance, objection handling, call checkpoints,
         │           wait compliance, agent sentiment, customer sentiment,
@@ -133,6 +134,40 @@ DELETE /api/reports/{job_id}  → remove all analyses for a job                 
 ```
 
 **Important:** Only run one `open_claude.sh` at a time. `claim_next_pending()` in `database.py` uses a read-then-update pattern that is not safe under concurrent access. Always check `ps aux | grep "open_claude\|claude --print"` before starting a new controller. Deleting `open_claude.sh` or killing its parent does **not** kill already-running `claude --print` subprocesses — kill them explicitly.
+
+## Controller Operations & Monitoring
+
+**Startup checklist:**
+- Ensure virtualenv is active: `. .venv/bin/activate`
+- Check for orphaned processes: `ps aux | grep "open_claude\|claude --print" | grep -v grep`
+- Kill any orphans before starting: `pkill -f "open_claude\|claude --print"`
+- Verify Qdrant is reachable: `curl http://34.47.255.166:80/health`
+- Verify LiteLLM proxy is up: `curl -I https://imllm.intermesh.net/v1`
+
+**Runtime monitoring:**
+- Controller logs: `tail -f logs/claude.log` — watch for `ERROR_` or `DEBUG_STEP2.5:` lines
+- Job queue depth: `curl http://localhost:8001/api/jobs | grep -c "id"` (should stay small)
+- Failed jobs: `sqlite3 jobs.db "SELECT COUNT(*) FROM jobs WHERE status='failed'"`
+- Recent errors: `grep "ERROR_" logs/claude.log | tail -10`
+
+**Error codes in logs** (from skill.md):
+- `ERROR_CLAIM` — job claim failed; check SQLite access
+- `ERROR_TIMEOUT` — embedding/search timed out (>30s); transcript may be too long
+- `ERROR_SEARCH` — Qdrant search failed; check service/network
+- `ERROR_PERSIST` — SQLite write failed; job left in-flight for manual retry
+- `WARNING_QDRANT` — Qdrant write failed (non-fatal); report stored in SQLite only
+
+**Recovery procedures:**
+- **Stuck job (no output >5 min):** Kill the hung process and reset the job:
+  ```bash
+  pkill -f "claude --print"
+  python3 -c "from database import update_job; update_job('<job_id>', status='pending')"
+  bash open_claude.sh &  # restart controller
+  ```
+- **Full queue backup:** Check for high-volume submissions; may need to increase batch size or add concurrency (carefully — currently single-threaded by design)
+- **Qdrant write failures:** Non-fatal, but reports won't appear in `/api/reports` until manually re-run. Monitor `WARNING_QDRANT` frequency; if >1%, check Qdrant health and networking
+
+**Analysis timeout:** Expected max 5 minutes per job for typical ~500-line transcripts. Very long transcripts (>1000 lines) may exceed this; consider splitting or optimizing in future versions.
 
 ## Qdrant — Store and Fetch
 
@@ -203,7 +238,7 @@ payload fields:
                                          call_checkpoints, wait_compliance, agent_sentiment,
                                          customer_sentiment, call_outcome, knowledge_accuracy}
   score_reasons                 object   per-dimension reason strings (same keys as scores);
-                                         if KB top-hit score < 0.60, affected reasons are prefixed
+                                         if KB top-hit score ≤ 0.60, affected reasons are prefixed
                                          with "No matching SOP was found — KB outdated/incomplete"
   checkpoints                   object   boolean flags for 7 mandatory call checkpoints
   call_outcome_type             string   renewed|upsold|retained|callback_scheduled|
@@ -217,7 +252,7 @@ Filtering via `GET /api/reports`:
 - `?caller_id=X` — exact match (server-side Qdrant filter)
 - `?caller_name=X` — partial case-insensitive match (Python post-filter)
 - `?agent_name=X` — partial case-insensitive match (Python post-filter)
-- `?sop_outdated=true` — calls where KB top-hit cosine similarity was < 0.60 (server-side Qdrant filter; used by the Outdated SOPs page)
+- `?sop_outdated=true` — calls where KB top-hit cosine similarity was ≤ 0.60 (server-side Qdrant filter; used by the Outdated SOPs page)
 - Multiple params → AND filter; `get_reports_by_filter()` in `qdrant_helper.py` handles all
 
 ### Two-stage matching
@@ -240,7 +275,7 @@ Filtering via `GET /api/reports`:
 | Analyze | `page-analyze` | Two-column: submit form + sidebar on left, live compliance report on right |
 | Agent Leaderboard | `page-agents` | Per-agent score averages, trend charts, ranked table |
 | Flagged Calls | `page-flagged` | Dense table of all calls where `violations_found=true`; CSV export + email summary |
-| Outdated SOPs | `page-outdated` | Card grid of calls where `sop_outdated=true` (KB top-hit score < 0.60); for KB improvers |
+| Outdated SOPs | `page-outdated` | Card grid of calls where `sop_outdated=true` (KB top-hit score ≤ 0.60); for KB improvers |
 
 **Analyze page — left panel:**
 - Submit form: file upload drop zone + manual textarea + Agent Name / Agent ID / Caller ID / Caller Name (all required) and a recent-jobs sidebar (last 30 from Qdrant, shared across all machines)
@@ -325,7 +360,7 @@ Each job stores a **list** of analysis objects in SQLite (one per run). The Qdra
     "knowledge_accuracy": 90
   },
   "score_reasons": {
-    "script_compliance": "No matching SOP was found... (if KB score < 0.60) OR full analysis text",
+    "script_compliance": "No matching SOP was found... (if KB score ≤ 0.60) OR full analysis text",
     "objection_handling": "...",
     "call_checkpoints": "...",
     "wait_compliance": "...",
@@ -351,7 +386,7 @@ Each job stores a **list** of analysis objects in SQLite (one per run). The Qdra
 }
 ```
 
-**KB relevance rule:** If the top Qdrant hit's cosine similarity score is < 0.60, the `score_reasons` for `script_compliance`, `objection_handling`, and `knowledge_accuracy` are prefixed with *"No matching SOP was found for this call topic — the knowledge base appears to be outdated or incomplete for this category and needs to be updated."* The per-dimension analysis still follows. `script_compliance` is additionally capped at 50.
+**KB relevance rule:** If the top Qdrant hit's cosine similarity score is ≤ 0.60 (or no hits found), the `score_reasons` for `script_compliance`, `objection_handling`, and `knowledge_accuracy` are prefixed with *"No matching SOP was found for this call topic — the knowledge base appears to be outdated or incomplete for this category and needs to be updated."* The per-dimension analysis still follows. `script_compliance` is additionally capped at 50. The `sop_outdated` flag is set to `true` in the report.
 
 ## Environment variables (`.env`)
 
@@ -390,3 +425,5 @@ SARVAM_API_KEY=<Sarvam AI API key>   # required for POST /api/transcribe-audio
 - A stale `claude --print` process (from a previous controller run) will compete for jobs — always run `./stop_all.sh` before starting a new controller.
 - `POST /api/transcribe-audio` calls Sarvam AI synchronously before queuing the job — if the audio is very long (>30 min) or the Sarvam API is slow, the HTTP request will block. For very long recordings use Sarvam's Batch API instead (not yet wired up).
 - Sarvam AI `language_code=unknown` enables automatic language detection — fine for mixed Hindi/English calls. Pass `hi-IN` or `en-IN` explicitly if the language is known.
+- **Analysis timeout:** Expected max 5 minutes per job for typical ~500-line transcripts. Embedding/search is capped at 30s; full analysis (extraction + scoring + report generation) at 5 min. Very long transcripts (>1000 lines) may exceed this — consider chunking in future versions.
+- **Error handling:** skill.md defines error codes (ERROR_CLAIM, ERROR_TIMEOUT, ERROR_SEARCH, ERROR_PERSIST, WARNING_QDRANT). All appear in logs/claude.log with stderr output. SQLite writes must succeed; Qdrant failures are non-fatal.
