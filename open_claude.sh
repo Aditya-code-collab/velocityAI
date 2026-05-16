@@ -6,7 +6,7 @@ cd "$SCRIPT_DIR"
 
 echo "[claude-controller] Poller started."
 
-# controller.md is imported into CLAUDE.md via `@controller.md`, so piping it
+# skill.md is imported into CLAUDE.md via `@skill.md`, so piping it
 # on stdin makes claude treat it as passive context and reply conversationally
 # instead of running the steps. Pass it as an explicit imperative prompt.
 PREAMBLE="Execute the following compliance-worker instructions NOW as a one-shot task. Do exactly the steps in order, run the bash commands, and end by printing JOB_DONE or NO_JOBS. Do not ask questions."
@@ -15,7 +15,7 @@ while true; do
   OUTPUT=$(claude --print \
     --allowedTools Bash \
     --dangerously-skip-permissions \
-    "$PREAMBLE"$'\n\n'"$(cat controller.md)" 2>&1)
+    "$PREAMBLE"$'\n\n'"$(cat skill.md)" 2>&1)
 
   if echo "$OUTPUT" | grep -q "NO_JOBS"; then
     sleep 5

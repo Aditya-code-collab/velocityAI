@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-@controller.md
+@skill.md
 
 ## Project Overview
 
@@ -107,7 +107,7 @@ POST /api/transcription  (requires: transcription, agent_name, agent_id, caller_
   open_claude.sh (bash poll loop, every 5s)
         │
         ▼
-  claude --print < controller.md   ← fresh shell per job, zero context between runs
+  claude --print < skill.md   ← fresh shell per job, zero context between runs
         │   flags: --allowedTools Bash --dangerously-skip-permissions
         │
         ├─ Step 1: claim next pending job from SQLite
@@ -274,7 +274,7 @@ Filtering via `GET /api/reports`:
 - **Dimension score cards** are clickable — opens a modal showing the dimension name, score, colour-coded bar, and the `score_reason` text from the report. Cards without a reason (old reports) are non-interactive. Reasons are stored in `currentScoreReasons` (module-level JS variable set on each `renderReport` call) to avoid HTML-attribute escaping issues.
 - "Script Compliance" dimension is labelled **"SOP Compliance"** in the UI (`DIM_LABELS` in `index.html`)
 
-To add a new field to the report, update `controller.md` (add the field to the JSON schema section) and the `renderReport()` function in `index.html`.
+To add a new field to the report, update `skill.md` (add the field to the JSON schema section) and the `renderReport()` function in `index.html`.
 
 ## Key files
 
@@ -282,8 +282,8 @@ To add a new field to the report, update `controller.md` (add the field to the J
 |------|------|
 | `start.sh` | One-command background start — nohup uvicorn + claude controller; logs to `logs/` |
 | `stop_all.sh` | Kill uvicorn, open_claude.sh, and claude --print processes |
-| `open_claude.sh` | Poll loop: spawns a fresh `claude --print < controller.md` per job |
-| `controller.md` | Single-job agent instructions — claim → embed → analyse → persist → alert → exit |
+| `open_claude.sh` | Poll loop: spawns a fresh `claude --print < skill.md` per job |
+| `skill.md` | Single-job agent instructions — claim → embed → analyse → persist → alert → exit |
 | `main.py` | FastAPI app — all REST endpoints |
 | `static/index.html` | Single-file SPA — submit form, live polling, report renderer, filters |
 | `qdrant_helper.py` | Raw `httpx` REST calls to Qdrant + OpenAI embeddings via LiteLLM proxy |
