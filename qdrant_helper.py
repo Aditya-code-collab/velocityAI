@@ -170,7 +170,7 @@ def get_report(job_id: str) -> list[dict]:
     r.raise_for_status()
     points = r.json()["result"].get("points", [])
     payloads = [p["payload"] for p in points]
-    return sorted(payloads, key=lambda p: p.get("created_at", ""))
+    return sorted(payloads, key=lambda p: p.get("created_at") or "")
 
 
 def get_agent_scores(agent_id: str = None, agent_name: str = None) -> dict:
@@ -212,7 +212,7 @@ def get_agent_scores(agent_id: str = None, agent_name: str = None) -> dict:
     avg_scores = {d: round(sums[d] / counts[d], 1) if counts[d] > 0 else None for d in dims}
     avg_overall = round(sum(v for v in avg_scores.values() if v is not None) / max(sum(1 for v in avg_scores.values() if v is not None), 1), 1)
 
-    sorted_payloads = sorted(payloads, key=lambda p: p.get("created_at", ""), reverse=True)
+    sorted_payloads = sorted(payloads, key=lambda p: p.get("created_at") or "", reverse=True)
 
     return {
         "agent_name": sorted_payloads[0].get("agent_name") if sorted_payloads else agent_name,
@@ -256,15 +256,92 @@ def get_all_agents_summary() -> list[dict]:
         avg_overall = round(sum(valid) / len(valid), 1) if valid else 0
 
         results.append({
-            "agent_id": reports[0].get("agent_id", aid),
-            "agent_name": reports[0].get("agent_name", "Unknown"),
+            "agent_id": reports[0].get("agent_id") or aid,
+            "agent_name": reports[0].get("agent_name") or "Unknown",
             "total_calls": len(reports),
             "avg_compliance_score": avg_overall,
             "avg_scores": avg_scores,
-            "last_call": max((p.get("created_at", "") for p in reports), default=""),
+            "last_call": max((p.get("created_at") or "" for p in reports), default=""),
         })
 
     return sorted(results, key=lambda x: x["avg_compliance_score"], reverse=True)
+
+
+def get_agent_trends(agent_id: str, weeks: int = 12) -> dict:
+    """Return weekly score trends for an agent over the last N weeks.
+
+    Returns { agent_id, weeks: [ { week_start, week_end, call_count, avg_scores, avg_overall } ] }
+    """
+    from datetime import datetime, timedelta
+
+    body: dict = {"limit": 500, "with_payload": True, "with_vector": False}
+    if agent_id:
+        body["filter"] = {"must": [{"key": "agent_id", "match": {"value": agent_id}}]}
+
+    r = _http_client().post(f"/collections/{REPORTS_COLLECTION}/points/scroll", json=body)
+    r.raise_for_status()
+    payloads = [p["payload"] for p in r.json()["result"].get("points", [])]
+
+    if not payloads:
+        return {"agent_id": agent_id, "weeks": []}
+
+    dims = ["script_compliance", "objection_handling", "call_checkpoints",
+            "wait_compliance", "agent_sentiment", "customer_sentiment",
+            "call_outcome", "knowledge_accuracy"]
+
+    # Build weekly buckets
+    now = datetime.utcnow()
+    week_start = now - timedelta(weeks=weeks)
+
+    # Group payloads by ISO week
+    weekly: dict[str, list] = {}
+    for p in payloads:
+        created = p.get("created_at", "")
+        if not created:
+            continue
+        try:
+            dt = datetime.fromisoformat(created.replace("Z", ""))
+        except Exception:
+            continue
+        if dt < week_start:
+            continue
+        # ISO week key: "2026-W20"
+        iso_year, iso_week, _ = dt.isocalendar()
+        wk = f"{iso_year}-W{iso_week:02d}"
+        weekly.setdefault(wk, []).append(p)
+
+    # Compute averages per week
+    result_weeks = []
+    for wk in sorted(weekly.keys()):
+        reports = weekly[wk]
+        sums = {d: 0 for d in dims}
+        counts = {d: 0 for d in dims}
+        for p in reports:
+            scores = p.get("scores", {})
+            for d in dims:
+                if d in scores and scores[d] is not None:
+                    sums[d] += scores[d]
+                    counts[d] += 1
+        avg_scores = {d: round(sums[d] / counts[d], 1) if counts[d] > 0 else None for d in dims}
+        valid = [v for v in avg_scores.values() if v is not None]
+        avg_overall = round(sum(valid) / len(valid), 1) if valid else None
+
+        # Compute week start/end dates from ISO week
+        import datetime as dt_mod
+        iso_year, iso_week_num = int(wk.split("-W")[0]), int(wk.split("-W")[1])
+        wk_start_date = dt_mod.date.fromisocalendar(iso_year, iso_week_num, 1)
+        wk_end_date = wk_start_date + timedelta(days=6)
+
+        result_weeks.append({
+            "week": wk,
+            "week_start": wk_start_date.isoformat(),
+            "week_end": wk_end_date.isoformat(),
+            "call_count": len(reports),
+            "avg_scores": avg_scores,
+            "avg_overall": avg_overall,
+        })
+
+    return {"agent_id": agent_id, "weeks": result_weeks}
 
 
 def delete_report(job_id: str):

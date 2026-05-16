@@ -1231,18 +1231,19 @@ function renderReport(job) {
           ? `<div class="no-violations">No violations — call meets all SOP requirements.</div>`
           : violations.map((v, i) => `
             <div class="violation-card">
-              <div class="v-rule">Rule ${i+1}: ${v.rule || ''}</div>
+              <div class="v-rule">${v.rule || `Violation ${i+1}`}</div>
               <div class="v-desc">${v.description || ''}</div>
               ${v.evidence ? `<div class="v-evidence">"${v.evidence}"</div>` : ''}
+              ${v.kb_article ? `<div style="margin-top:6px;font-size:11px;color:var(--accent2);">KB Reference: ${v.kb_article}</div>` : ''}
             </div>`).join('')
         }
       </div>
     </div>
 
-    <!-- Recommendation -->
+    <!-- Coaching Recommendation -->
     <div class="section">
-      <div class="section-title">Recommendation</div>
-      <div class="section-body"><p class="rec-text">${r.recommendation || '—'}</p></div>
+      <div class="section-title">Coaching Recommendation</div>
+      <div class="section-body">${renderCoaching(r.recommendation)}</div>
     </div>
   `;
 
@@ -1388,6 +1389,12 @@ async function openAgentDetail(agentId) {
         <canvas id="agentRadarCanvas" width="320" height="320"></canvas>
       </div>
 
+      <!-- Trend chart -->
+      <div style="margin-top:24px;">
+        <h4 style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Score Trend (Weekly)</h4>
+        <div style="height:220px;"><canvas id="agentTrendCanvas"></canvas></div>
+      </div>
+
       ${data.recent_calls?.length ? `
       <div style="margin-top:24px;">
         <h4 style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Recent Calls</h4>
@@ -1432,14 +1439,128 @@ async function openAgentDetail(agentId) {
         },
       });
     }, 50);
+
+    // Fetch and render trend chart
+    loadAgentTrend(agentId);
   } catch (err) {
     content.innerHTML = `<p style="color:var(--red);">Error: ${err.message}</p>`;
+  }
+}
+
+let agentTrendChart = null;
+
+async function loadAgentTrend(agentId) {
+  try {
+    const r = await fetch(`${API}/api/agents/${encodeURIComponent(agentId)}/trends?weeks=12`);
+    if (!r.ok) return;
+    const data = await r.json();
+    const weeks = data.weeks || [];
+    if (weeks.length < 2) {
+      const el = document.getElementById('agentTrendCanvas');
+      if (el) el.parentElement.innerHTML = '<div style="color:var(--muted);font-size:12px;text-align:center;padding:20px;">Not enough data for trends yet (need 2+ weeks)</div>';
+      return;
+    }
+
+    const canvas = document.getElementById('agentTrendCanvas');
+    if (!canvas) return;
+    if (agentTrendChart) agentTrendChart.destroy();
+
+    const labels = weeks.map(w => w.week);
+    const dimColors = {
+      script_compliance: '#6c63ff',
+      objection_handling: '#a78bfa',
+      call_checkpoints: '#22c55e',
+      wait_compliance: '#3b82f6',
+      agent_sentiment: '#f59e0b',
+      customer_sentiment: '#ec4899',
+      call_outcome: '#14b8a6',
+      knowledge_accuracy: '#f97316',
+    };
+
+    const datasets = [
+      {
+        label: 'Overall',
+        data: weeks.map(w => w.avg_overall),
+        borderColor: '#e2e8f0',
+        borderWidth: 3,
+        pointRadius: 4,
+        pointBackgroundColor: '#e2e8f0',
+        tension: 0.3,
+      },
+      ...DIM_KEYS.map(k => ({
+        label: DIM_LABELS[k],
+        data: weeks.map(w => w.avg_scores?.[k] ?? null),
+        borderColor: dimColors[k] || '#64748b',
+        borderWidth: 1.5,
+        borderDash: [4, 3],
+        pointRadius: 2,
+        tension: 0.3,
+        hidden: true,  // hidden by default, click legend to show
+      })),
+    ];
+
+    agentTrendChart = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { min: 0, max: 100, ticks: { stepSize: 20, color: '#64748b', font: { size: 10 } }, grid: { color: '#2e325040' } },
+          x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { display: false } },
+        },
+        plugins: {
+          legend: { labels: { color: '#e2e8f0', boxWidth: 12, font: { size: 10 } }, position: 'bottom' },
+          tooltip: { mode: 'index', intersect: false },
+        },
+        interaction: { mode: 'nearest', axis: 'x', intersect: false },
+      },
+    });
+  } catch (e) {
+    console.error('Trend load failed:', e);
   }
 }
 
 function closeAgentModal() {
   document.getElementById('agentModal').classList.remove('open');
   if (agentRadarChart) { agentRadarChart.destroy(); agentRadarChart = null; }
+  if (agentTrendChart) { agentTrendChart.destroy(); agentTrendChart = null; }
+}
+
+// ── Coaching renderer ──
+function renderCoaching(text) {
+  if (!text) return '<p style="color:var(--muted);">—</p>';
+  // Parse the structured format: WHAT WENT WELL / WHAT TO IMPROVE / PRIORITY ACTION
+  const sections = [];
+  const wellMatch = text.match(/WHAT WENT WELL[:\s]*\n([\s\S]*?)(?=WHAT TO IMPROVE|PRIORITY ACTION|$)/i);
+  const improveMatch = text.match(/WHAT TO IMPROVE[:\s]*\n([\s\S]*?)(?=PRIORITY ACTION|$)/i);
+  const priorityMatch = text.match(/PRIORITY ACTION[:\s]*\n?([\s\S]*?)$/i);
+
+  if (!wellMatch && !improveMatch && !priorityMatch) {
+    // Fallback for old-format plain text recommendations
+    return `<p class="rec-text">${text}</p>`;
+  }
+
+  let html = '';
+  if (wellMatch) {
+    html += `<div style="margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">What Went Well</div>
+      <div style="font-size:13px;line-height:1.7;color:var(--text);padding-left:12px;border-left:3px solid var(--green);">${wellMatch[1].trim().replace(/\n/g, '<br>')}</div>
+    </div>`;
+  }
+  if (improveMatch) {
+    html += `<div style="margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--yellow);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">What To Improve</div>
+      <div style="font-size:13px;line-height:1.7;color:var(--text);padding-left:12px;border-left:3px solid var(--yellow);">${improveMatch[1].trim().replace(/\n/g, '<br>')}</div>
+    </div>`;
+  }
+  if (priorityMatch && priorityMatch[1].trim()) {
+    html += `<div style="padding:12px 14px;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.25);border-radius:10px;">
+      <div style="font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Priority Action</div>
+      <div style="font-size:13px;line-height:1.6;color:var(--text);">${priorityMatch[1].trim().replace(/\n/g, '<br>')}</div>
+    </div>`;
+  }
+  return html;
 }
 
 // ── Utilities ──

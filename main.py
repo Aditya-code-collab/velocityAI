@@ -20,6 +20,7 @@ from config import SARVAM_API_KEY, VIOLATION_EMAIL_TO
 from database import create_job, get_job, get_job_by_caller_id, init_db, list_jobs, update_job
 from email_helper import send_email
 from qdrant_helper import delete_report, get_report, get_reports_by_filter, list_reports, get_agent_scores, get_all_agents_summary
+from qdrant_helper import delete_report, get_report, get_reports_by_filter, list_reports, get_agent_scores, get_all_agents_summary, get_agent_trends
 
 app = FastAPI(
     title="VelocityAI SOP Compliance Checker",
@@ -347,3 +348,52 @@ def get_agent_score_card(agent_id: str):
     if data["total_calls"] == 0:
         raise HTTPException(status_code=404, detail="No reports found for this agent")
     return data
+
+
+@app.get("/api/agents/{agent_id}/trends")
+def get_agent_trend_data(agent_id: str, weeks: int = 12):
+    """Return weekly score trends for a single agent — powers the trend chart."""
+    try:
+        data = get_agent_trends(agent_id=agent_id, weeks=weeks)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Qdrant error: {e}")
+    return data
+
+
+# ── Agent notification ────────────────────────────────────────────────────────
+
+class NotifyRequest(BaseModel):
+    agent_id: str
+    agent_name: str
+    compliance_score: int
+    summary: str
+    priority_action: str = ""
+    webhook_url: str | None = None  # extensible: POST to any webhook
+
+
+@app.post("/api/notify")
+def notify_agent(req: NotifyRequest):
+    """Send a score summary notification after analysis completes.
+
+    Currently logs the notification. When webhook_url is provided, POSTs
+    the payload there (extensible to SMS/WhatsApp via Gupshup/Sarvam).
+    """
+    payload = {
+        "agent_id": req.agent_id,
+        "agent_name": req.agent_name,
+        "compliance_score": req.compliance_score,
+        "summary": req.summary,
+        "priority_action": req.priority_action,
+        "timestamp": __import__("datetime").datetime.utcnow().isoformat(),
+    }
+
+    if req.webhook_url:
+        try:
+            r = httpx.post(req.webhook_url, json=payload, timeout=10)
+            return {"status": "sent", "webhook_status": r.status_code}
+        except Exception as e:
+            return {"status": "webhook_failed", "error": str(e), "payload": payload}
+
+    # Default: log it (can be extended to SMS, email, WhatsApp)
+    print(f"[NOTIFY] Agent {req.agent_name} ({req.agent_id}): score={req.compliance_score}")
+    return {"status": "logged", "payload": payload}

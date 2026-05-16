@@ -68,6 +68,16 @@ curl "http://localhost:8001/api/reports?caller_id=C001&agent_name=Rahul"      # 
 curl http://localhost:8001/api/reports/<job_id>                               # all analyses for a job
 curl -X DELETE http://localhost:8001/api/reports/<job_id>                     # delete all analyses for a job
 
+# Agent analytics
+curl http://localhost:8001/api/agents                                        # leaderboard: all agents ranked by avg score
+curl http://localhost:8001/api/agents/AGT-001/scores                         # single agent: avg scores + recent calls
+curl "http://localhost:8001/api/agents/AGT-001/trends?weeks=12"              # weekly score trends for an agent
+
+# Agent notification (extensible to SMS/WhatsApp via webhook_url)
+curl -X POST http://localhost:8001/api/notify \
+  -H "Content-Type: application/json" \
+  -d '{"agent_id":"AGT-001","agent_name":"Rahul","compliance_score":80,"summary":"Good call","priority_action":"Practice rebuttals"}'
+
 # Check for stale claude controller processes
 ps aux | grep "open_claude\|claude --print" | grep -v grep
 ```
