@@ -1,5 +1,82 @@
 # Controller — VelocityAI Compliance Worker (single-job run)
 
+## Project Overview
+
+**VelocityAI** — IndiaMart SOP Compliance Checker. Accepts call transcriptions via REST API, queues them as jobs, and dispatches each job to a fresh `claude --print` subprocess (zero context between runs) that retrieves relevant reference material from Qdrant, checks the transcription for violations, generates a structured report, and emails alerts when violations are found.
+
+## Team, Skills & Technical Journey
+
+### Team Composition & Ownership
+
+| Member | Role | Ownership Area |
+|--------|------|---------------|
+| Yashwant Chandra | Full-stack + AI Lead | End-to-end architecture, Claude controller pipeline (`skill.md`, `open_claude.sh`), backend API (`main.py`), Qdrant integration (`qdrant_helper.py`), KB ingestion pipeline |
+
+### Skills Demonstrated
+
+**AI / LLM Engineering**
+- Prompt-engineered a structured, single-shot compliance agent that runs as a `claude --print` subprocess with zero persistent context — each job is fully self-contained.
+- Designed an 8-dimension scoring rubric with weighted aggregation, mandatory rule-extraction audit trails, and calibration examples so the LLM produces consistent, explainable scores.
+- Implemented a KB relevance gate (cosine similarity ≤ 0.60 → `sop_outdated` flag + score cap) to surface gaps in the knowledge base rather than silently scoring on bad evidence.
+
+**Vector Search & RAG**
+- Ingested 970 IndiaMART help-KB articles (54 folders) into Qdrant using deterministic UUIDs (`uuid5(relative_path)`) so re-ingestion is idempotent.
+- Built a two-stage retrieval pipeline: cosine similarity for topic selection → Claude language reasoning for violation detection — separating retrieval quality from reasoning quality.
+- Switched the compliance source from 5 hand-authored SOPs to the full 970-article KB mid-project, with zero code changes (env-var controlled via `SOP_SEARCH_COLLECTION`).
+
+**Backend Engineering**
+- FastAPI REST API with SQLite job queue, atomic job claiming (`claim_next_pending`), and full report history per caller.
+- Dual storage: SQLite as the source of truth (always written first), Qdrant as the search/filter layer (non-fatal if write fails).
+- Audio transcription endpoint integrating Sarvam AI Saarika v2.5 — optimised for Indian languages and Hinglish telephony audio.
+
+**Frontend Engineering**
+- Single-file vanilla JS SPA (`static/index.html`) — no build step, no framework dependency. Four pages: Analyze, Agent Leaderboard, Flagged Calls, Outdated SOPs.
+- Live polling (2s interval), score rings, clickable dimension cards with modal score reasons, CSV export, real-time sidebar with filter tabs.
+
+**DevOps / Operational Maturity**
+- `start.sh` / `stop_all.sh` for one-command lifecycle management with log separation.
+- Structured error codes in the controller (`ERROR_CLAIM`, `ERROR_TIMEOUT`, `ERROR_SEARCH`, `ERROR_PERSIST`, `WARNING_QDRANT`) for grep-able log monitoring.
+- Recovery runbooks documented for stuck jobs, Qdrant failures, and orphaned processes.
+
+### Technical Journey
+
+**Day 0 — Problem framing:** IndiaMART call-centre agents follow multi-step scripts (greet → disclose → ask permission → pitch → handle objections → close). Manual QA is slow and inconsistent. The goal: automate compliance scoring on call transcriptions with evidence-backed, dimension-level feedback.
+
+**Early iteration — hand-authored SOPs:** Started with 5 manually written SOP documents seeded into Qdrant (`indiamart_sops`). The controller matched transcripts to the nearest SOP and checked against discrete `rules[]` strings. Worked for known script types but fell apart for calls that didn't map cleanly to one of five categories.
+
+**Key pivot — KB-first retrieval:** Replaced the 5 SOPs with the full IndiaMART Freshdesk help KB (970 articles, 54 folders). The controller now reasons over article prose rather than hand-coded rules. This gave broader coverage and made the system self-improving — adding a new KB article immediately improves compliance detection for that topic.
+
+**Scoring consistency problem → audit trail:** Early runs had score variance for similar transcripts. Fixed by mandating a rule-extraction + audit-trail step (Step 2.5) before any scoring. The LLM must enumerate extracted rules and grade each one (`PASS` / `FAIL` / `PARTIAL`) before computing scores. Added a full calibration example with expected scores and reasoning.
+
+**Operational reliability:** Added atomic job claiming, `sop_outdated` flag for KB gap detection, structured error codes, and documented recovery procedures. Made Qdrant failures non-fatal so a vector-store blip doesn't lose the analysis.
+
+**Audio support:** Added `POST /api/transcribe-audio` integrating Sarvam AI for Indian-language STT — the same compliance pipeline runs on the returned transcript, making the system usable directly from call recordings.
+
+**Human Review & Auditability**
+- Every completed compliance report is automatically emailed to the QA reviewer (`VIOLATION_EMAIL_TO`) when violations are detected — the email includes the full compliance summary, per-dimension scores, and the top priority coaching action, enabling human sign-off on AI-flagged calls.
+- The Flagged Calls page provides a one-click **CSV export** of all flagged calls (Agent Name, Caller Name, Compliance Score, Violations, Summary, Timestamp) so QA managers can download the full audit trail, annotate scores offline, and maintain a human-reviewed ground-truth dataset for accuracy benchmarking.
+- The Outdated SOPs page similarly exports a CSV (Category, Caller Name, Agent Name, SOP Score, Why SOP Needs Improvement, Timestamp) to facilitate KB gap review by subject-matter experts.
+- Together, these two channels — automated email alerts for immediate human review and CSV export for batch audit — close the loop between AI-generated scores and human validation, providing the paper trail needed to measure and improve system accuracy over time.
+
+### Deployment & Validated Test Results (as of 2026-05-16)
+
+The system is deployed and running. Start with `./start.sh`; UI at **http://localhost:8001**.
+
+| Metric | Value |
+|--------|-------|
+| Analyses stored in Qdrant (`indiamart_reports`) | **37** |
+| Completed jobs in SQLite | **26** |
+| Unique agents evaluated | **12** |
+| Unique callers processed | **16** |
+| Calls flagged for violations | **32 / 37 (86.5%)** |
+| Calls with `sop_outdated` (KB gap surfaced) | **1** |
+| KB categories covered by test calls | **8** (BuyLead & Tender, Scripts, Subscription Sales, Lead Management, Policies, Catalog Add/Delete, Hot Lead) |
+| Compliance score range observed | **0 – 100** |
+| Average compliance score | **68.5 / 100** |
+| KB articles ingested (`indiamart_kb`) | **970 across 54 folders** |
+
+---
+
 You are a one-shot compliance analysis agent. Process exactly one job, then exit. Do not loop.
 
 ## Step 1 — Claim the next pending job
