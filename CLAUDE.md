@@ -33,6 +33,8 @@ The system is deployed and running. Start with `./scripts/start.sh`; UI at **htt
 | Member | Role | Ownership Area |
 |--------|------|---------------|
 | Yashwant Chandra | Full-stack + AI Lead | End-to-end architecture, Claude controller pipeline (`skill.md`, `open_claude.sh`), backend API (`main.py`), Qdrant integration (`qdrant_helper.py`), KB ingestion pipeline |
+| Aditya Singh | Backend & Infra | Backend API support, database layer (`database.py`), deployment & operational tooling (`scripts/`) |
+| Ayush Pundir | Frontend & QA | Frontend SPA (`static/index.html`), UI/UX, testing & quality assurance |
 
 ### Skills Demonstrated
 
