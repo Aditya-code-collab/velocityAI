@@ -23,7 +23,7 @@ fi
 
 # --- start server ---
 echo "Starting API server on http://localhost:8001 ..."
-nohup .venv/bin/uvicorn main:app --host 0.0.0.0 --port 8001 \
+nohup .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8001 \
   > "$LOG_DIR/server.log" 2>&1 &
 echo $! > "$LOG_DIR/server.pid"
 

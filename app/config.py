@@ -25,7 +25,7 @@ VIOLATION_EMAIL_TO = os.getenv("VIOLATION_EMAIL_TO", "yashwantsinghchandra258@gm
 
 SARVAM_API_KEY = os.getenv("SARVAM_API_KEY", "")
 
-DATABASE_PATH = os.getenv("DATABASE_PATH", "jobs.db")
+DATABASE_PATH = os.getenv("DATABASE_PATH", "database/jobs.db")
 WORKER_POLL_INTERVAL = int(os.getenv("WORKER_POLL_INTERVAL", "5"))
 
-PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

@@ -4,12 +4,16 @@ CLI-callable email sender.
 Usage: python3 email_helper.py --to addr --subject "..." --body "..." [--html body]
 """
 import argparse
+import os
 import smtplib
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from config import SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD
+from app.config import SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD
 
 
 def send_email(to: str, subject: str, body: str, html_body: str = None):

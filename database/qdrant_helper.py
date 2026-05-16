@@ -5,7 +5,7 @@ version compatibility issues (client v1.18 vs server v1.9.2).
 import uuid
 import httpx
 from openai import OpenAI
-from config import (
+from app.config import (
     QDRANT_URL, QDRANT_COLLECTION, SOP_SEARCH_COLLECTION, REPORTS_COLLECTION,
     EMBEDDING_MODEL, EMBEDDING_DIM,
     OPENAI_API_KEY, OPENAI_API_BASE,
@@ -391,7 +391,7 @@ def store_report(job: dict, report: dict):
     transcription = job.get("transcription") or report.get("transcription")
     if not transcription:
         try:
-            from database import get_job
+            from .database import get_job
             row = get_job(job["id"])
             transcription = (row or {}).get("transcription", "")
         except Exception:

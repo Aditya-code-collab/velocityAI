@@ -32,8 +32,8 @@ The system is deployed and running. Start with `./scripts/start.sh`; UI at **htt
 
 | Member | Role | Ownership Area |
 |--------|------|---------------|
-| Yashwant Chandra | Full-stack + AI Lead | End-to-end architecture, Claude controller pipeline (`skill.md`, `open_claude.sh`), backend API (`main.py`), Qdrant integration (`qdrant_helper.py`), KB ingestion pipeline |
-| Aditya Singh | Backend & Infra | Backend API support, database layer (`database.py`), deployment & operational tooling (`scripts/`) |
+| Yashwant Chandra | Full-stack + AI Lead | End-to-end architecture, Claude controller pipeline (`skill.md`, `open_claude.sh`), backend API (`app/main.py`), Qdrant integration (`database/qdrant_helper.py`), KB ingestion pipeline |
+| Aditya Singh | Backend & Infra | Backend API support, database layer (`database/database.py`), deployment & operational tooling (`scripts/`) |
 | Ayush Pundir | Frontend & QA | Frontend SPA (`static/index.html`), UI/UX, testing & quality assurance |
 
 ### Skills Demonstrated
@@ -105,7 +105,7 @@ pip install -r requirements.txt
 .venv/bin/python3 scripts/setup_sops.py
 
 # Start API server (port 8001) — UI served at http://localhost:8001
-.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
 
 # Start claude controller (separate terminal)
 bash scripts/open_claude.sh
@@ -169,7 +169,7 @@ POST /api/transcription  (requires: transcription, agent_name, agent_id, caller_
         ├─ If caller_id already exists → reuse same job_id, reset to pending
         │
         ▼
-    SQLite jobs.db          ← status: pending → processing → completed/failed
+    SQLite database/jobs.db ← status: pending → processing → completed/failed
         │                      report field stores a JSON array (one entry per analysis run)
         ▼
   open_claude.sh (bash poll loop, every 5s)
@@ -201,7 +201,7 @@ GET /api/reports/{job_id}     → all analyses for a job, oldest-first          
 DELETE /api/reports/{job_id}  → remove all analyses for a job                 (from Qdrant)
 ```
 
-**Important:** Only run one `open_claude.sh` at a time. `claim_next_pending()` in `database.py` uses a read-then-update pattern that is not safe under concurrent access. Always check `ps aux | grep "open_claude\|claude --print"` before starting a new controller. Deleting `open_claude.sh` or killing its parent does **not** kill already-running `claude --print` subprocesses — kill them explicitly.
+**Important:** Only run one `open_claude.sh` at a time. `claim_next_pending()` in `database/database.py` uses a read-then-update pattern that is not safe under concurrent access. Always check `ps aux | grep "open_claude\|claude --print"` before starting a new controller. Deleting `open_claude.sh` or killing its parent does **not** kill already-running `claude --print` subprocesses — kill them explicitly.
 
 ## Controller Operations & Monitoring
 
@@ -215,7 +215,7 @@ DELETE /api/reports/{job_id}  → remove all analyses for a job                 
 **Runtime monitoring:**
 - Controller logs: `tail -f logs/claude.log` — watch for `ERROR_` or `DEBUG_STEP2.5:` lines
 - Job queue depth: `curl http://localhost:8001/api/jobs | grep -c "id"` (should stay small)
-- Failed jobs: `sqlite3 jobs.db "SELECT COUNT(*) FROM jobs WHERE status='failed'"`
+- Failed jobs: `sqlite3 database/jobs.db "SELECT COUNT(*) FROM jobs WHERE status='failed'"`
 - Recent errors: `grep "ERROR_" logs/claude.log | tail -10`
 
 **Error codes in logs** (from skill.md):
@@ -244,7 +244,7 @@ DELETE /api/reports/{job_id}  → remove all analyses for a job                 
 The ingested IndiaMART help knowledge base. One markdown article = one point
 (no chunking — articles are short, self-contained answers). Ingested by
 `velocityAI project/sync-pipeline/kb_ingest.py`, which mirrors
-`qdrant_helper.py` conventions (raw `httpx`, LiteLLM embeddings, 1536-dim).
+`database/qdrant_helper.py` conventions (raw `httpx`, LiteLLM embeddings, 1536-dim).
 IDs are `uuid5(relative_path)` so re-ingestion upserts in place.
 
 ```
@@ -321,7 +321,7 @@ Filtering via `GET /api/reports`:
 - `?caller_name=X` — partial case-insensitive match (Python post-filter)
 - `?agent_name=X` — partial case-insensitive match (Python post-filter)
 - `?sop_outdated=true` — calls where KB top-hit cosine similarity was ≤ 0.60 (server-side Qdrant filter; used by the Outdated SOPs page)
-- Multiple params → AND filter; `get_reports_by_filter()` in `qdrant_helper.py` handles all
+- Multiple params → AND filter; `get_reports_by_filter()` in `database/qdrant_helper.py` handles all
 
 ### Two-stage matching
 
@@ -330,7 +330,7 @@ Filtering via `GET /api/reports`:
 | **Topic selection** | Cosine similarity: `embed(transcription)` vs stored vectors in `SOP_SEARCH_COLLECTION` |
 | **Violation check** | Claude language reasoning: derive expected behaviour from the top hit's `content` (KB) or `rules[]` (legacy SOPs), check vs full transcription |
 
-`search_sops` (in `qdrant_helper.py`) queries `SOP_SEARCH_COLLECTION` and returns the top-3 hits with `category`, `folder`, `title`, `content`, `score`, and `rules` (empty for KB; only the top hit's rules are kept for legacy SOPs). Retrieval quality depends on which KB folders have been ingested — transcripts about an un-ingested topic will get weak, off-target hits.
+`search_sops` (in `database/qdrant_helper.py`) queries `SOP_SEARCH_COLLECTION` and returns the top-3 hits with `category`, `folder`, `title`, `content`, `score`, and `rules` (empty for KB; only the top hit's rules are kept for legacy SOPs). Retrieval quality depends on which KB folders have been ingested — transcripts about an un-ingested topic will get weak, off-target hits.
 
 ## Frontend
 
@@ -384,17 +384,22 @@ To add a new field to the report, update `skill.md` (add the field to the JSON s
 | File | Role |
 |------|------|
 | `README.md` | User-facing setup guide — prerequisites, first-time setup, run commands, API reference, troubleshooting |
+| `skill.md` | Single-job agent instructions — claim → embed → analyse → persist → alert → exit |
+| `run.md` | Quick-start operational runbook |
 | `scripts/start.sh` | One-command background start — nohup uvicorn + claude controller; logs to `logs/` |
 | `scripts/stop_all.sh` | Kill uvicorn, open_claude.sh, and claude --print processes |
 | `scripts/open_claude.sh` | Poll loop: spawns a fresh `claude --print < skill.md` per job |
-| `skill.md` | Single-job agent instructions — claim → embed → analyse → persist → alert → exit |
-| `main.py` | FastAPI app — all REST endpoints |
-| `static/index.html` | Single-file SPA — submit form, live polling, report renderer, filters |
-| `qdrant_helper.py` | Raw `httpx` REST calls to Qdrant + OpenAI embeddings via LiteLLM proxy |
-| `database.py` | SQLite helpers — `init_db`, `create_job`, `claim_next_pending`, `update_job`, `get_job`, `get_job_by_caller_id`, `list_jobs` |
-| `email_helper.py` | CLI-callable SMTP sender: `python3 email_helper.py --to --subject --body` |
 | `scripts/setup_sops.py` | One-time seed — upserts 5 IndiaMart SOPs into legacy `indiamart_sops` |
-| `config.py` | All env-var config via `python-dotenv`; exposes `PROJECT_DIR`, `SOP_SEARCH_COLLECTION` |
+| `app/main.py` | FastAPI app — all REST endpoints |
+| `app/config.py` | All env-var config via `python-dotenv`; exposes `PROJECT_DIR`, `SOP_SEARCH_COLLECTION` |
+| `app/email_helper.py` | CLI-callable SMTP sender: `python3 app/email_helper.py --to --subject --body` |
+| `database/__init__.py` | Re-exports all public symbols from `database.py` and `qdrant_helper.py` so `from database import X` works from anywhere |
+| `database/database.py` | SQLite helpers — `init_db`, `create_job`, `claim_next_pending`, `update_job`, `get_job`, `get_job_by_caller_id`, `list_jobs` |
+| `database/qdrant_helper.py` | Raw `httpx` REST calls to Qdrant + OpenAI embeddings via LiteLLM proxy |
+| `database/jobs.db` | SQLite runtime database — job queue and report history |
+| `static/index.html` | Single-file SPA — submit form, live polling, report renderer, filters |
+| `references/FLOWCHART.md` | System architecture flowchart |
+| `references/readme.txt` | Legacy plain-text notes |
 | `velocityAI project/sync-pipeline/kb_ingest.py` | Ingests `IndiaMART-KB/<subdir>` markdown into the `indiamart_kb` collection (1 article = 1 point; idempotent) |
 
 ## External services
@@ -482,7 +487,7 @@ SMTP_PASSWORD=<Gmail app password>
 SMTP_HOST=smtp.gmail.com         # optional, default shown
 SMTP_PORT=587                    # optional, default shown
 VIOLATION_EMAIL_TO=yashwantsinghchandra258@gmail.com
-DATABASE_PATH=jobs.db            # optional, default shown
+DATABASE_PATH=database/jobs.db   # optional, default shown
 CLAUDE_BIN=claude                # optional, path to claude binary
 SARVAM_API_KEY=<Sarvam AI API key>   # required for POST /api/transcribe-audio
 ```
@@ -495,7 +500,7 @@ SARVAM_API_KEY=<Sarvam AI API key>   # required for POST /api/transcribe-audio
 - All 970 KB articles across 54 folders are ingested into `indiamart_kb` (as of 2026-05-16). Re-ingest with `python3 "velocityAI project/sync-pipeline/kb_ingest.py" --subdir "."` — it is idempotent.
 - KB upserts must use small batches (≤8 points) — the Qdrant server rejects large request bodies with HTTP 413.
 - Each `claude --print` run starts with zero context — no memory of previous jobs. All state is in SQLite and Qdrant.
-- `qdrant_helper.py` uses raw `httpx` calls — do not switch to the `qdrant-client` library (v1.18 is incompatible with server v1.9.2).
+- `database/qdrant_helper.py` uses raw `httpx` calls — do not switch to the `qdrant-client` library (v1.18 is incompatible with server v1.9.2).
 - Qdrant must be addressed as `http://34.47.255.166:80` (explicit port 80) — omitting it causes the client to append `:6333`.
 - Email requires a Gmail **App Password**: Google Account → Security → 2-Step Verification → App passwords.
 - Same `caller_id` across submissions → same `job_id` reused; each new analysis appends to the report array in SQLite and creates a new Qdrant point.

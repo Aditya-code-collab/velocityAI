@@ -10,8 +10,8 @@
 
 | Member | Role | Ownership Area |
 |--------|------|---------------|
-| Yashwant Chandra | Full-stack + AI Lead | End-to-end architecture, Claude controller pipeline (`skill.md`, `open_claude.sh`), backend API (`main.py`), Qdrant integration (`qdrant_helper.py`), KB ingestion pipeline |
-| Aditya Singh | Backend & Infra | Backend API support, database layer (`database.py`), deployment & operational tooling (`scripts/`) |
+| Yashwant Chandra | Full-stack + AI Lead | End-to-end architecture, Claude controller pipeline (`skill.md`, `open_claude.sh`), backend API (`app/main.py`), Qdrant integration (`database/qdrant_helper.py`), KB ingestion pipeline |
+| Aditya Singh | Backend & Infra | Backend API support, database layer (`database/database.py`), deployment & operational tooling (`scripts/`) |
 | Ayush Pundir | Frontend & QA | Frontend SPA (`static/index.html`), UI/UX, testing & quality assurance |
 
 ### Skills Demonstrated
@@ -109,7 +109,7 @@ Using the `transcription` field from the claimed job (max ~50,000 tokens; very l
 
 ```bash
 .venv/bin/python3 -c "
-from qdrant_helper import search_sops
+from database import search_sops
 import json
 import sys
 transcription = '''<transcription>'''  # Transcription must be passed as a Python string literal
@@ -518,7 +518,7 @@ Append the new report to the existing list (same caller may have prior analyses 
 import json
 import sys
 from database import get_job, update_job
-from qdrant_helper import store_report
+from database import store_report
 
 report = <report_json>  # Already a Python dict from Step 5
 job_id = '<job_id>'
@@ -564,7 +564,7 @@ except Exception as e:
 Only run this if `violations_found` is true:
 
 ```bash
-.venv/bin/python3 email_helper.py \
+.venv/bin/python3 app/email_helper.py \
   --to yashwantsinghchandra258@gmail.com \
   --subject "Compliance Violation — <agent_name>" \
   --body "<compliance_summary>\n\nScores: script_compliance=<score>, objection_handling=<score>, call_checkpoints=<score>, wait_compliance=<score>, agent_sentiment=<score>, customer_sentiment=<score>, call_outcome=<score>, knowledge_accuracy=<score>\nOverall: <compliance_score>/100\n\nPRIORITY ACTION: <priority_action_from_recommendation>"
@@ -825,7 +825,7 @@ Use this calibration to anchor your scoring. A call with all checkpoints hit but
 
 **Metrics to monitor:**
 - Job queue depth: `curl http://localhost:8001/api/jobs | wc -l`
-- Failed jobs: `SELECT COUNT(*) FROM jobs WHERE status='failed'` in `jobs.db`
+- Failed jobs: `SELECT COUNT(*) FROM jobs WHERE status='failed'` in `database/jobs.db`
 - Qdrant write success rate: grep `WARNING_QDRANT` in logs
 
 **Recovery:**
