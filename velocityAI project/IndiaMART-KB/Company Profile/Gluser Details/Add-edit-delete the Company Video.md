@@ -1,3 +1,0 @@
-# Add/edit/delete the Company Video
-
-Add /Edit Corporate VideoAsk the client to share a video link with us via email.Educate the client about the product "Guidelines for Company Video".Contact Centre Team:Raise a ticket mentioning the video link.Educate the customer that our team will get in touch with you within 24 working hours.Servicing Team:Raise an internal ticket in "Media Gallery" bucket.Educate the client that our dedicated team will review the and if the shared video is as per IndiaMART guidelines then it will reflect on your catalog else removed.Delete Corporate VideoBoth Servicing and contact centre team has to raise an internal ticket in "Media Gallery" bucket.

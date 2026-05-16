@@ -1,3 +1,0 @@
-# How to get company name changed in TrustSEAL details?
-
-Inform the client that to change the company name we need below mentioned documents. - If Proprietor: PAN card, VAT/CST No. copy, Company correlation letter, GST- If Partnership: PAN card, VAT/CST No. copy, Company correlation letter, GST, Partnership deed copy- If Private/Public limited: PAN card, VAT/CST No. copy, Company correlation letter, GST, Certification of incorporation copy.Raise an internal ticket in "Trust Seal" bucket along with the above mentioned documents and inform the client, if all the documents will be verified then the changes will reflect within 3 working days.

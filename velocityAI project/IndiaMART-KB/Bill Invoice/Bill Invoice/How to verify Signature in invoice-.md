@@ -1,3 +1,0 @@
-# How to verify Signature in invoice?
-
-Inform the client to install adobe reader in the system then follow the below mention steps to validate the digital signature:1.     Right Click on Signature and select Show Signature Properties2.     Click on Show Signer's Certificate3.     Click on Trust4.     Click on Add to Trusted Certificates5.     Click on OK6.     Update check on all the unticked boxes & click OK7.     Click on Validate Signature8.     Click on Close9.     A tick mark will be displayed in Green10.   The signature validation process is completedIf the client is not able to understand how to follow the steps then send the below video link for reference:https://www.youtube.com/watch?v=cCuSyDDkqzE

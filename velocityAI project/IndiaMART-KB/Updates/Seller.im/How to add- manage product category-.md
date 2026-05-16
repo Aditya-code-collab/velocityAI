@@ -1,3 +1,0 @@
-# How to add/ manage product category?
-
-Path to be followed:Seller panel >> Manage Products >> Select the desired product >> Click on Category >> Add relevant category >> Click on SaveWhat has been done now?As the user changes the product name or clicks on edit option ("pencil icon") in front of the categories section on Product Card. We have started displaying "Select Category" Pop up. The selection of category remains the same as per the previous logic.Only if the user wants to change the "prime mapping" he/she will have to drag and drop the category card on the top.The first category in the list of selected categories will be marked as prime or from now onwards will be set his "first preference" and the same is highlighted with the use of distinct color.

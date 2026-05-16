@@ -1,3 +1,0 @@
-# Supplier not getting PNS calls on a particular number/ Landline number
-
-Check if number is mapped under PNS     o   If Not, then map the number under PNSCheck whether numbers are on the same device  or separateo   If numbers are on the same device then ask the client to use a separate device for the registered/mapped numbersIM Buyer number is blocked on true callero   If yes, then ask client to unblock the numberIf the client is specifically telling about the landline numberApart from the above points also check if it is added in Fax sectionServicing Team:If the issue still persists initiate a ticket in PNS bucket.Customer Care Team:Initiate a ticket

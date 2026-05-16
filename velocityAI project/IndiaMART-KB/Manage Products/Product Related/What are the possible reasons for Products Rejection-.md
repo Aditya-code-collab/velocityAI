@@ -1,3 +1,0 @@
-# What are the possible reasons for Products Rejection?
-
-Some of the reasons due to which your product listing may be rejected are:Unclear product nameIrrelevant or no product descriptionMismatch in the product name and product descriptionTest/dummy/duplicate product listingInvalid watermark for contact details on the product listingPlagiarism (i.e. copied from Google for any other source)Product image captured/clicked from the computer screenSuspect IPThere can be additional reasons for product rejection. IndiaMART reserves the rights to approve/reject product listing. Guide the steps to "make changes in a product" from Seller Panel.Click here to know how to view rejected productsClick here to check our customers' help section for this article.

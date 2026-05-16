@@ -1,3 +1,0 @@
-# What is the difference between the listing of free and paid services other than SS+?
-
-With free catalog page service, the supplier can be listed as a free seller on the IndiaMART website. He will receive more buyer requirements through IndiaMART and also get the benefit of the PNS (Preferred number service) facility – All the numbers which have added in PNS settings will ring simultaneously to make sure you don’t miss out on buyer calls.With paid services, the seller gets a higher listing on IndiaMART in comparison to the free catalog. Also, get complementary BuyLeads every week with the package

@@ -1,3 +1,0 @@
-# Automated BL approval process (12th November'19)
-
-New process (Automated Approval Process) :To scale up the process, we are extending the capability of the Current "Full auto-mated approval process" by means of below logic :Additional leads that will be taken into consideration for this Auto-mated approval process are as below:Leads clearing DNC ConditionsOnly alphabets in name field (no special characters / numeric)FENQ leads ( excluding FCP page, & PDP page of Free Clients, Android & IOS)Lead title with not more than 4 wordsNo ISQ or ISQ with (‘Why do you need this', ‘Preferred Supplier Location', "I am interested in", ‘Quantity and Quantity Unit’, 'Approximate Order Value etc)Description is Null or With “I am interested in” is only eligible.

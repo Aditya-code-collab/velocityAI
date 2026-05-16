@@ -1,3 +1,0 @@
-# How to add more than 100 new products?
-
-Guide the client to "add products" from Seller Panel.If client requests IndiaMART to make changes on his/her behalf:- For Contact Center: Inform the client to share the product details (Product Name/Image/Price/Description) at "customercare@indiamart.com"- For Servicing: Inform the client to share the product details (Product Name/Image/Price/Description) via email:Product Count < 70: Raise a self ticket to make the required changesProduct Count > 70: Contact "Bulk Product Addition team"Inform the client that the changes will be done within 24-48 working hours.

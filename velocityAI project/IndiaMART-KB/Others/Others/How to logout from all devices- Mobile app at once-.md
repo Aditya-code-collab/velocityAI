@@ -1,3 +1,0 @@
-# How to logout from all devices/ Mobile app at once?
-
-We need to follow the below steps in order to solve the above issue :Step 1 : Ask the seller to change the password of his account.Step 2 : Ask the seller to enable 2 step verification in his primary email ID and change the password of the email ID as well.Step 3 : Educate the seller to never share his OTP/Password with anyone.Step 4 : Issue a hacking ticket so that the hacking team can log out the account from all devices.Scenario : The above issue occurs when the seller's EX-employee has access to his IndiaMART account or the seller has mistakenly shared his OTP/Password with anybody.

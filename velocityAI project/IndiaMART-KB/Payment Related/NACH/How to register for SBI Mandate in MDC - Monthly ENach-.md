@@ -1,3 +1,0 @@
-# How to register for SBI Mandate in MDC - Monthly ENach?
-
-1. Go to https://pay.indiamart.com/ and enter the registered mobile number.2. Choose MDC-Monthly E NACH and select State Bank of India from the bank drop-down list, complete the form and submit the details.3. Authenticate using Net Banking.4. After authenticating a Razorpay pop up will open.5. Complete details for the Net Banking process and confirm the e-mandate.6. Your E-Mandate will get successfully registered.Also, note that on desktop site the IFSC code is prefilled but on M-site users will have to enter the IFSC code manually for SBI.

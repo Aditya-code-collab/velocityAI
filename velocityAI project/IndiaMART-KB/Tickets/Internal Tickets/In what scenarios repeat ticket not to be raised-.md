@@ -1,3 +1,0 @@
-# In what scenarios repeat ticket not to be raised?
-
-Scenario 1If the old ticket of the same complaint is closed under-No IM intervention  RequiredQuality IssueRoutine DisputeCommunication sent to the complainant: Sir, we have already intimidated you on XYZ date that we can not help in such a scenario. We are just a third party and have no role to play in any transaction  between buyer and supplierScenario 2If the old ticket of the same complaint is closed underComplainant stopped respondingNo KYC ReceivedCommunication sent  to the complainant: Sir, you need to share your complaint document to customercare@indiamart.com (and explain the list of documents)

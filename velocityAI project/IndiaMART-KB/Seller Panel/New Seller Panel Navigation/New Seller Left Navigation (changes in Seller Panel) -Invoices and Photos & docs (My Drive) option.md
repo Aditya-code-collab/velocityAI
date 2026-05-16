@@ -1,3 +1,0 @@
-# New Seller Left Navigation (changes in Seller Panel) -Invoices and Photos & docs (My Drive) option
-
-What has been done now?We have got rid of the sub-menu options and made them part of Primary Page.(Refer: https://kb.indiamart.com/en/article/rearrange-products-bulk-price-updates-manage-groups-rearrange-groups-category-report-product-video-items-will-not-be-visible-under-the-manage-product )IndiaMART Invoices and Photos & docs (Previously names as My Drive) Section has been brought up-front to improve visibility and usage.Revamped the user interface for Left Navigation as per the current trends.

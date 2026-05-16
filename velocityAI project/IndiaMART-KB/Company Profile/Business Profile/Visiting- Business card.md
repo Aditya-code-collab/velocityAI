@@ -1,3 +1,0 @@
-# Visiting/ Business card
-
-Educate the client to follow the below-mentioned steps:- Log-in to the Seller Panel.- Click on the Dashboard tab appearing on the left-hand side of the screen.- There will be a widget named "Business Card".- The client can add and edit the visiting card using this widget.- The client can add both, front and backside view of the visiting card.Alternatively, below mentioned path can also be followed:Seller Panel > Company Profile > Business Profile > Business Card appearing at the bottom of the page.Note: TAT for visiting card approval/QC is 24 to 48 hours.If still the issue is not resolved kindly mail to Kartheek Perala (kartheek.perala@indiamart.com)

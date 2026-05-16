@@ -1,3 +1,0 @@
-# What are the benefits of the quotation feature?
-
-The provision to generate and send quotation in a few steps has multiple benefits for both, buyer and sellerBenefits for Sellers:It helps initiate the seller’s discussion with the buyerQuotation in a professional format can be generated easily and shared instantly with the buyerIt reduces the negotiation time for both the partiesBenefits for Buyers:Buyer receives the quotation in a structured format hence, it becomes easy for him/her to compare quotations received from multiple sellersBuyer can contact the seller who provides him with the best dealIt reduces the waiting time for the buyer to get the quotation

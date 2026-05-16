@@ -1,3 +1,0 @@
-# User not able to call other suppliers
-
-Confirm if the client is dialling PNS number with 0 or without 0. PNS number will connect only if 0 is addedServicing Team:Check internally from the PNS team (Soumya Dip Das - soumya.das@indiamart.com) whether the client’s number has been blacklisted or not.o   If yes, then need to inform the client why his/her number was blocked. Ask the PNS team whether we can whitelist the number or not.Customer Care Team:Check whether the customer is a PNS Spammer. If he/ she is a PNS spammer then it will be reflected on your CRM screenShare the information as per pop-up on CRM.If the customer is very much adamant and not ready to listen to anything then only the ticket needs to be raised.

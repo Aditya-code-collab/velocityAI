@@ -1,3 +1,0 @@
-# (Rearrange products, Bulk price updates, Manage groups, Rearrange groups, category report, Product Video) Items will not be visible under the Manage Product and Company Profile Screen - 2nd July'19
-
-Rearrange products, Bulk price updates, Manage groups, Rearrange groups, category report, Product Video will not be visible under the Manage Product and Company Profile Screen.Team has revamped the above options.Removed all the sub-menu items from the left navigation of 'Product & Groups and Company Profile' Section and these sub-menu items will only be available in the drop-down 'More Options'.Screenshot of Manage Products :

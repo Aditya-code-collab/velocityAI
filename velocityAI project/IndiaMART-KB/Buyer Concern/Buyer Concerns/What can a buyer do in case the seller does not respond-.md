@@ -1,3 +1,0 @@
-# What can a buyer do in case the seller does not respond?
-
-While we always recommend our sellers to promptly respond to buyer enquiries, sometimes they may not do so due to multiple reasons. These may be lack of time or they may not provide service in your location or may not deal in the specific product/model that you need. In such cases, you must reach out to other sellers dealing in your required product(s).Alternately, you can simply post your buy requirement here and we will send you more seller options. We also share your requirement with sellers, who will contact you immediately.Click here to check our customers' help section for this article.

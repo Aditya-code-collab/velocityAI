@@ -1,3 +1,0 @@
-# How to improve seller/supplier rating?
-
-The seller should keep a note of the following points which will help him to have a positive rating from the buyer: Suppliers should reply to the buyer immediately with a competitive quotationThe supplier should not get angry if the buyer is not ready to deal with himThe supplier must show politeness while communicating with the buyerThe supplier should always deliver the product on or before committed timeQuality of product must be what is agreedThe supplier should always update Product Price/MOQ/Availability on catalog (Latest) for all varieties individuallyNow supplier can send a Rating Emailer to all his buyers individually via LMS (Lead Manager). Click here to know more.

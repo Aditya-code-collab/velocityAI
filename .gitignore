@@ -1,4 +1,5 @@
 .env
+velocityAI project/IndiaMART-KB/
 .venv/
 __pycache__/
 *.pyc

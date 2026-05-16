@@ -1,3 +1,0 @@
-# BL purchase or credit allocation fails
-
-User attempts BL purchase with no balanceIs shown retail BL purchase optionClicks "Buy Now" and goes to Pay.IM to make paymentUpon successful payment, credit allocation happensUpon successful credit allocation, BL purchase is attemptedUser is redirected to initiator platform and based on BL purchase success, after purchase popup is displayedIn case BL purchase or credit allocation fails in the new journey, the following steps are taken:If credit allocation was done, the allocated credits are lapsedA payment refund ticket is initiated in the refund bucket of Finance team on weberpPlatform shows the following messaging to the user:

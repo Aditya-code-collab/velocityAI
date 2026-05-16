@@ -1,3 +1,0 @@
-# How to change NACH date to avoid bounce?
-
-Identify the reason for NACH date changeCheck the NACH Hit Date on the account If the customer is calling 5 days before NACH hit date: For Contact Center: Raise a ticket For Servicing: Educate the customer that NACH date can be extended for a maximum of 15 Days If the customer is calling within 5 days from NACH hit date: Educate customer that we cannot change upcoming NACH date as the same as already been forwarded to bank for processing from our endTo change the NACH date, initiate a ticket in 'NACH Adhoc' bucket. Please Note: NACH deduction date can only be changed after 1st NACH has been clearedEducate the customer that NACH date can only be changed once in 6 months

@@ -1,3 +1,0 @@
-# What is the closure TAT for different issues addressed by TrustSEAL team?
-
-Mentioned below is the closure TAT for different issues addressed by TrustSEAL team:1. Trust Seal Process (TS Verification, Appointment, Documents and Manufacturing site visit)-     - Document Verification Process: Within 15 days from the date of case scheduling     - TS Certificate Hard copy Delivery: Within 21 days from the Hosting Date2. Change of Company’s Name, Address and Statutory Details-     - 3 working days3. Certificate Reprint, Received in damaged condition, Delay in delivery from Courier Agency and Returned to the origin     -  7 to 10 working days

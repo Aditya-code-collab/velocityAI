@@ -1,3 +1,0 @@
-# Buyer related issues- How to address Post BuyLead purchase issue?- BuyLead Approval / Mapping Issues bucket
-
-Post BuyLead purchase issue needs to be addressed in the BuyLead Approval / Mapping Issues bucket.Path to initiate ticket:Weberp >> Company >> STS >> Open ticket >> Customer Oriented Internal Queries >> BuyLead Approval / Mapping IssuesBelow are the concerns for which servicing team needs to initiate a ticket in the BuyLead Approval / Mapping Issues Bucket:Buyer is denying for his requirementRequirement already fulfilledBuyer is a service providerSeeking for JobPosted earlier ( i.e last month,15 days before)Buyer is having a different requirement from posted oneBuyer mobile Number is not in serviceBuyer location is Mismatch

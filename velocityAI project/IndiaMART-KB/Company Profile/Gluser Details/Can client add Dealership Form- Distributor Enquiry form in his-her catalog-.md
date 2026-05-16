@@ -1,3 +1,0 @@
-# Can client add Dealership Form/ Distributor Enquiry form in his/her catalog?
-
-No, the client cannot add/ change the same in the catalog himself/herself. We can add/ change the same from our end.Ask the client to share the Dealership Form and upon receiving the document please follow the below path:Seller Panel >> Company Profile >> Gluser Details >> Franchise Enquiry Form >> Select the appropriate options basis client's nature of business >> Upload the formOptions available for selection:DistributorFranchiseeWholesalerAgentRetailerVendorPharma FranchisePharma PCDYou can also write the customized title to be displayed in the catalog

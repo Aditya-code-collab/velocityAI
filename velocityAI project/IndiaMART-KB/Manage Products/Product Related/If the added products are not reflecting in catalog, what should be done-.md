@@ -1,3 +1,0 @@
-# If the added products are not reflecting in catalog, what should be done?
-
-The added products will reflect on the catalog within 24 working hours (subject to approval by IndiaMART).If the product is not listed on catalog, then the status of the listing is to be checked i.e. approved or rejected.If the product is rejected then the product will not be visible in the catalogTo view the list of your rejected products, visit:      (Seller.IM >> Manage products>> Inactive >> ‘Rejected’ tab)Here, you will also be able to see rejection reason for the listing.Click here to check our customers' help section for this article.

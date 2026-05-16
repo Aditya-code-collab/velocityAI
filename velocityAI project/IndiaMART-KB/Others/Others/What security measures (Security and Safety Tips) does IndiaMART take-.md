@@ -1,3 +1,0 @@
-# What security measures (Security and Safety Tips) does IndiaMART take?
-
-IndiaMART gives a high amount of importance to the Personal Information Security of its customers.IndiaMART is committed to the security of its buyers and suppliers. Security is the core element for our healthy growth, and to achieve this we use 256-bit encryption technology.All your online transactions on IndiaMART are secure with the highest levels of transaction securitycurrently available on the Internet.Apart from this, all your information is safe with us as we do not share this with any third party forcommercial use.

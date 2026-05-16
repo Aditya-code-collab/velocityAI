@@ -1,3 +1,0 @@
-# How a free supplier can get get a "verified supplier" tag?
-
-Educate the client to fulfil below-mentioned criteria to get the "Verified Supplier" tag:1. FCP2. Mobile number should be OTP verified (User Verification)3. Email address should be verified (User Verification)4. Three products with photos5. GSTIN verifiedInform the client that post-meeting all the above-mentioned criteria, you will receive a verification call from our internal team. (within 48 working hours from meeting the criteria)Post telephonic verification our team will provide the "Verified Supplier" tag.In case of any issue, you can connect with Vivek Khote (vivek.khote@indiamart.com)Click here to check our customers' help section for this article.

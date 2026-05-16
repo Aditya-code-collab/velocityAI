@@ -1,3 +1,0 @@
-# The client has filed the GST but it is not reflected on GST portal
-
-Check whether the GST number updated in our records is correct or not (Validate GST Number)If Incorrect:The client will not be able to claim the GST credit.Ask the client to share the GST registration certificate via email so that the correct GST details can be updated. (Once received raise a ticket to get that updated) Educate the client that GST credit can only be availed post correct GST is updated in IndiaMART records.If Correct:Ask the month for which the client is unable to see the status:Ask the client to share the invoice number and raise a ticket (under customer accounting general queries) educating the client that our team will get in touch within 24-48 working hours.

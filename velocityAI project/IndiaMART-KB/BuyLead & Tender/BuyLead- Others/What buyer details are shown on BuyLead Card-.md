@@ -1,3 +1,0 @@
-# What buyer details are shown on BuyLead Card?
-
-Below are the buyers' information visible in BuyLead card:IndiaMART member sinceCompany typeBusiness typeMobile number verified or notEmail ID verified or notVerified GST availabilityIf a buyer is also a seller then the products he/she deals in  Number of previous requirements posted by the buyerProducts of Interest of the buyer (MCATs of previously posted BuyLeads/products viewed or browsed by buyer)In case of standard product BuyLead, photo of the product is also shown Products recently viewed by the buyer or sent enquiry by the buyer are also shown along with photo and price (For more details click here)If website is available, that is also shown by an iconEnriched BuyLead card image:

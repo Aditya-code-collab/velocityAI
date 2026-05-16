@@ -1,3 +1,0 @@
-# Engagement script: Maturity Issue
-
-Good Morning Sir! I am <your name> from IndiaMART. How are you doing sir!                  - Wait for the customer responseThis is a service feedback call. Is this the right time to talk to you? - Wait for the customer response Thank you, Sir. This call is being made for taking your feedback on BuyLeads and Buyer calls and this call is being recorded for training and feedback purpose. -Wait for the customer responseSir, I can check that you consumed BuyLeads last on <<date>>. You haven't consumed BuyLeads after that. -- Listen to the customer & accordingly revert If the client says - Maturity issue/ ROI issue / I had consumed leads for a while but I didn't get any maturity, therefore, I have stopped using it

@@ -1,3 +1,0 @@
-# What is a Tender?
-
-Tender is a process by which an organisation (generally government bodies) who are in need of goods/services invites other parties to submit a proposal or bid to provide these goods/services.It’s different from BuyLeads in the following ways -Generally floated by government departments or PSUs.IndiaMart procures tenders from external sources.There are strict deadlines for applying on Tenders. (However, most tenders have a longer life unlike BuyLeads which expires within a few days).The actual bidding process takes place on source websites & IndiaMart is not involved in that process directly.For more information - What is a Tender?Here’s how a posted tender appears in seller panel.

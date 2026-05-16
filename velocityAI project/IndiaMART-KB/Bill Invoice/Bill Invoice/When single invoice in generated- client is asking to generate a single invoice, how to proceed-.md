@@ -1,3 +1,0 @@
-# When single invoice in generated/ client is asking to generate a single invoice, how to proceed?
-
-The client is asking for a single invoice against the receipt id's as he has done a single entry in his system and not able to change the same.Single invoice for such instances is completely dependent on the clearance of both receipts, here as a process TDS gets cleared post cheque clearance and if at the time of tagging (which is a trigger for invoice generation) both receipts are cleared then a single invoice will be generated else there will be the differenceCurrently, the treatment for such cases is supplementary invoices as there is no other option to solve this issue.

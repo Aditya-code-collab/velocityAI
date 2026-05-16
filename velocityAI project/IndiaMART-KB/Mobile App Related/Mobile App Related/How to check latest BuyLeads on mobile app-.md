@@ -1,3 +1,0 @@
-# How to check latest BuyLeads on mobile app?
-
-Follow the below steps for both IOS and Android app-Step 1- Click on Latest Buy Lead option on DashboardStep 2- Select Recent tab option on the top centre of the pageStep 3- It will redirect you to the latest Buy lead pagePlease Note:- Filter option is available on the top, to search BL’s from order value, Location, Product Wise & Lead TypeCustomer can also shortlist the BuyLead by clicking on the star on the right of the BuyLeadCustomer can mark not relevant by clicking on the sign given below the star sign, with the reason of marking Not Relevant and submit the same

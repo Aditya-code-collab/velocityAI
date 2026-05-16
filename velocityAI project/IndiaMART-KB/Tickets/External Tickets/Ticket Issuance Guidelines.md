@@ -1,3 +1,0 @@
-# Ticket Issuance Guidelines
-
-Before opening any ticket, STS history/Previous ticket history should be checked to ensure that the current requirement is still pending Make sure to mention the source while issuing the ticket. (Meeting/Call/Email/Self-identified) The ticket should be issued on right STS only Exact/Original issue should be mentioned The mentioned issue should not be generic. (Ex: Check mapping, Less Inquiry etc.) All the information/requirement should be also mentioned in the ticket In case any attachment/support doc is available, the same should also be attached in the ticket  Please Note:- Any ticket issued from internal customer proceeds for NAT would be counted as the wrong ticket Opening wrong/incomplete ticket falls under severity policy

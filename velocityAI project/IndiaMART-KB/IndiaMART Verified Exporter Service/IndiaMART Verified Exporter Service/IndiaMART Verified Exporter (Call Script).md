@@ -1,3 +1,0 @@
-# IndiaMART Verified Exporter (Call Script)
-
-You have also shown interest in focusing on Foreign Markets during one of our conversations and I want to take this opportunity to tell you about New Product.We have launched an exclusive product ‘IndiaMART Verified Exporter’ particularly for you and for those customers who want to take their brand outside India as well. As you know that a lot of countries are citing India to be a manufacturing hub and therefore export from India is bound to grow in coming times. IndiaMART wants to provide this opportunity to its customers to expand their business globally and contribute to the vision “Make in India, Make for the World”.Let me explain the benefits of this product and how you can stay ahead if you opt for this product.

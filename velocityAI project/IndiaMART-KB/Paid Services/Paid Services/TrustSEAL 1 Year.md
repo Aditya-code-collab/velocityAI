@@ -1,3 +1,0 @@
-# TrustSEAL 1 Year
-
-Now the seller can enhance his/ her listing and credibility with Mini Dynamic Catalog & TrustSEAL and grow his/her businessAttract genuine buyersGet distinct visibility and higher listing across IndiaMART networkGet a competitive advantage over non-certified suppliersWhat do you get with TrustSEALTrustSEAL LogoTrustSEAL Badge in IndiaMART listingCertified TrustSEAL from IndiaMARTTrust report20 India BuyLeads every week + 2 daily bonus India BuyLeads under IndiaMART Advantage Program (IMA)Price:TrustSEAL 1 year- Rs. 45,000*TrustSEAL 2 years- Rs. 70,000* TrustSEAL 3 years- Rs. 90,000*(*Prices are exclusive of GST)

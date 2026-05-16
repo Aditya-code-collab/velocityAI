@@ -1,3 +1,0 @@
-# Does the product title have any impact on the visibility of the Products?
-
-Yes, product title impacts the visibility of your product hence, the business leads (Buyer Enquiries) you get on IndiaMART for that product.Product title impacts the priority of your product in search results when the buyer searches for your product.If you have named your product correctly and completely, the chances of it appearing on top search results get higher.Refer to "Product Title Guidelines" to understand how to make product name effective.Also, Refer to "Do's & Don'ts" to understand things to keep in mind while naming the product.

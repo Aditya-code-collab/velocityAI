@@ -1,3 +1,0 @@
-# How to raise IPR/ copyright issue?
-
-We have a dedicated form on desktop for the IPR (Intellectual Property Rights) or trademark infringement complaints.We are providing a separate form on desktop for reporting infringement issues. Either our customer care executive or direct complainer can submit any infringement complaints with proper information through this form. This will help legal team for collecting all information that is required to take further action. Please find below the link of new IPR complaint form :-  https://www.indiamart.com/complaint.html   Step 1 : Go to the footer of the page and click on Complaints button

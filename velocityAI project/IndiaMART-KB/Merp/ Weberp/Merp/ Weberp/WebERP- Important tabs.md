@@ -1,3 +1,0 @@
-# WebERP: Important tabs
-
-My ERP> My Profile/Team ProfileDetails about the employee/teamMy ERP> Docs and ProposalsAll sales proformas, documents regarding NSD, CSD/KCD, Marketplace, HR etc.Company>Company> (Name of Company)> IM PromotionClient detailsCompany> ProformaEntering/viewing a new/existing sales proformaCompany> Customer VoiceAll concerns raised by our clients are listedServices> My Sales MIS Pending Meeting, Pending Renewal etcServices> My CustCtrl MISUnused Amount, Outstanding Amount etcServices> Customer MISClient base under employeesServices> DownloadDetails regarding client churn/ downloads

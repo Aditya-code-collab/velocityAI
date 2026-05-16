@@ -1,3 +1,0 @@
-# Listing Rotation Issue
-
-For DIR Mcat Pages :Please Note : On City Pages , if the supplier's rotating above a specific supplier with the same city as the searched city , then the supplier will not rotate with those suppliers.Check the below pointers before escalating the issue on Tester Forum :Check if the product is primary mapped : Yes/NoCheck the Rank of the Mcat : A/B/C/DCheck if the Price is added to the product : Yes/NoCheck if the Image is added to the product : Yes/NoCheck if the description is added to the product : Yes/NoFor DIR Search Pages :Currently we do not have any provision for rotation on DIR Search pages.

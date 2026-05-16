@@ -1,3 +1,0 @@
-# Location Preference search logic at DIR page
-
-Whenever we say DIR page, it must be specified which page are we referring to (MCAT page or Search page). Both have different logic and objectives.Below are the two location preference settings which impact the DIR listing page differently-Location Preference Settings- It is a default location preference set at the time of onboarding. It influences the visibility on DIR MCAT listing page and the location from where PNS calls can be receivedPreferred Location- This is a system computed preferred location, based on BuyLead consumption pattern. It influences the visibility in Search, BuyLead recommendations and ASTBUY enquiries.

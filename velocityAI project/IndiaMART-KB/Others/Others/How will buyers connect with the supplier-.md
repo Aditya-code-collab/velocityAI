@@ -1,3 +1,0 @@
-# How will buyers connect with the supplier?
-
-When a buyer is searching for products which you sell, he/she will be able to see your catalog listing on IndiaMART platform. Buyers can choose to connect with you through three channels:Post a buy requirement on IndiaMARTPost a direct enquiry on your catalogCall you through our preferred number serviceSellers can view the business enquiries here.Note: IndiaMART is only a platform for connecting buyers with suppliers. It does not have any role to play in the transactions between the two parties.Click here to check our customers' help section for this article.

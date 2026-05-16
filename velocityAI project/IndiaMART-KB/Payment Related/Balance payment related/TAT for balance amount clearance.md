@@ -1,3 +1,0 @@
-# TAT for balance amount clearance
-
-Check the mode through which the client has made the payment-Cheque - Total 4 Working days (Bank TAT - 2 days; Please note: For the amount clearance it is mandatory that the sales team has done Receipt entry in the system. If it is not done the amount will not cleared and it will be considered as bounce)NEFT/ RTGS - Total 2 woking days ( Bank TAT - 2 hours; Please note: For the amount clearance it is mandatory that the sales team has done Receipt entry in the system. If it is not done the amount will not cleared and it will be considered as bounce)Credit Card/ Debit Card - It is an automated process. The amount will be auto cleared on the same day. (Bank TAT - instant)

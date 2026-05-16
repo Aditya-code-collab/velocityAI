@@ -1,3 +1,0 @@
-# What are the guidelines for Product Title?
-
-Below mentioned points should be taken into consideration while writing the Product Title:Product title must be under 70 characters including the spacesIt should be unique and have searchable product namesThe first letter of each word in the product title should be in upper caseShould include item specifications such as size, color, condition, article number, brand name, etc.Use numerals ("5" instead of "five"; "Pack of 5" instead of "Pack of Five")Use correct spellings and grammarUse seller name as a brand name only if your product is a private label.Use the standard molecular formula, if needed i.e. "Fe used for Iron" (not fe for FE); Al used for Aluminum (not al for AL).Click here to view the don'ts of the Product Title

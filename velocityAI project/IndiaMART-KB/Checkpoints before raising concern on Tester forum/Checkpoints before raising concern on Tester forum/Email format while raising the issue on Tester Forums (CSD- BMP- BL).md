@@ -1,3 +1,0 @@
-# Email format while raising the issue on Tester Forums (CSD/ BMP/ BL)
-
-Email Subject: Problem statement + Platform + [Glid: ]Email Description:Below are the basic details that you need to mention in the mail thread:Issue: A crisp summary of the raised issue (*Mandatory)Gluser ID: Gluser ID of the affected user/ client (*Mandatory)Platform: Platform or Property where the issue occurred (*Mandatory)(Seller/ DIR-MCAT Page/ DIR-Search page/ Android App/ iOS App/ Email/SMS/App Notification etc.)Ref. URL: in case the issue raised from Desktop or Mobile site (*Mandatory)Issue Impact analysis: If foundScreenshot: (*Mandatory)Checklist status:(*Mandatory) To share the status of all the checkpoints validated before escalationAny other findings/ observations:RCA  (Mandatory)
