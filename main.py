@@ -57,6 +57,7 @@ class JobResponse(BaseModel):
     status: str
     category: Optional[str] = None
     violations_found: bool = False
+    transcription: Optional[str] = None
     report: Optional[list] = None   # list of per-analysis report dicts, newest last
     error: Optional[str] = None
     created_at: Optional[str] = None
@@ -79,6 +80,7 @@ def _row_to_response(row: dict) -> JobResponse:
         status=row["status"],
         category=row.get("category"),
         violations_found=bool(row.get("violations_found", 0)),
+        transcription=row.get("transcription"),
         report=report,
         error=row.get("error"),
         created_at=row.get("created_at"),

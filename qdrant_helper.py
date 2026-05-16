@@ -379,6 +379,18 @@ def store_report(job: dict, report: dict):
     embed_text = f"{summary} {recommendation}".strip() or report.get("category", "compliance report")
     vector = embed(embed_text)
 
+    # Carry the original transcript so the UI can display it alongside the
+    # report. Prefer an explicit value on the job; otherwise pull the stored
+    # transcription from SQLite (skill.md's job dict omits it).
+    transcription = job.get("transcription") or report.get("transcription")
+    if not transcription:
+        try:
+            from database import get_job
+            row = get_job(job["id"])
+            transcription = (row or {}).get("transcription", "")
+        except Exception:
+            transcription = ""
+
     point = {
         "id": str(uuid.uuid4()),   # unique per analysis — never overwrites
         "vector": vector,
@@ -388,6 +400,7 @@ def store_report(job: dict, report: dict):
             "agent_id": job.get("agent_id"),
             "caller_id": job.get("caller_id"),
             "caller_name": job.get("caller_name"),
+            "transcription": transcription,
             "created_at": datetime.utcnow().isoformat(),
             "category": report.get("category"),
             "violations_found": bool(report.get("violations_found", False)),

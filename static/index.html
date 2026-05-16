@@ -410,6 +410,27 @@
     color: var(--text);
   }
 
+  .transcript-details summary { cursor: pointer; list-style: none; user-select: none; }
+  .transcript-details summary::-webkit-details-marker { display: none; }
+  .transcript-summary::before { content: '▸ '; color: var(--muted); }
+  .transcript-details[open] .transcript-summary::before { content: '▾ '; }
+  .transcript-box {
+    max-height: 360px; overflow-y: auto;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .tr-turn {
+    font-size: 13px; line-height: 1.6;
+    padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .tr-turn:last-child { border-bottom: none; }
+  .tr-speaker {
+    font-weight: 700; margin-right: 8px;
+    text-transform: capitalize;
+  }
+  .tr-text { color: var(--text); white-space: pre-wrap; }
+
   .job-id-strip {
     display: flex; align-items: center; gap: 8px;
     font-size: 11px; color: var(--muted); margin-bottom: 16px;
@@ -1094,6 +1115,7 @@ async function fetchReport(id) {
       created_at: analyses[0].created_at,
       violations_found: latest.violations_found,
       category: latest.category,
+      transcription: latest.transcription,
       report: analyses,
     };
   } catch { return null; }
@@ -1139,6 +1161,7 @@ function renderReport(job) {
   const checkpoints = r.checkpoints || {};
   const outcomeType = r.call_outcome_type || '';
   const trajectory = r.customer_sentiment_trajectory || '';
+  const transcript = r.transcription || job.transcription || '';
   const color = scoreColor(score);
   const circ = 2 * Math.PI * 38;
   const dash = (score / 100) * circ;
@@ -1225,6 +1248,16 @@ function renderReport(job) {
     <div class="section">
       <div class="section-title">Summary</div>
       <div class="section-body"><p style="font-size:14px;line-height:1.6;">${r.compliance_summary || '—'}</p></div>
+    </div>
+
+    <!-- Call Transcript -->
+    <div class="section">
+      <details class="transcript-details" ${transcript ? '' : 'open'}>
+        <summary class="section-title transcript-summary">Call Transcript</summary>
+        <div class="section-body">
+          <div class="transcript-box">${renderTranscript(transcript)}</div>
+        </div>
+      </details>
     </div>
 
     <!-- Violations -->
@@ -1565,6 +1598,37 @@ function renderCoaching(text) {
     </div>`;
   }
   return html;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+// Render the original call transcript with speaker turns highlighted.
+function renderTranscript(text) {
+  if (!text || !String(text).trim()) {
+    return '<p style="color:var(--muted);font-size:13px;">No transcript stored for this call.</p>';
+  }
+  const lines = String(text).replace(/\r\n/g, '\n').split('\n');
+  const rows = lines.map(raw => {
+    const line = raw.trim();
+    if (!line) return '';
+    // Match a leading "Speaker:" label (Agent / Customer / etc.)
+    const m = line.match(/^([A-Za-z][\w .'-]{0,24}?)\s*:\s*(.*)$/);
+    if (m) {
+      const speaker = m[1].trim();
+      const isAgent = /agent|rep|executive|caller manager/i.test(speaker);
+      const color = isAgent ? 'var(--accent2)' : 'var(--green)';
+      return `<div class="tr-turn">
+        <span class="tr-speaker" style="color:${color};">${escapeHtml(speaker)}</span>
+        <span class="tr-text">${escapeHtml(m[2])}</span>
+      </div>`;
+    }
+    return `<div class="tr-turn"><span class="tr-text">${escapeHtml(line)}</span></div>`;
+  });
+  return rows.join('');
 }
 
 // ── Utilities ──
