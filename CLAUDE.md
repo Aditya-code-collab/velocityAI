@@ -315,6 +315,7 @@ To add a new field to the report, update `skill.md` (add the field to the JSON s
 
 | File | Role |
 |------|------|
+| `README.md` | User-facing setup guide — prerequisites, first-time setup, run commands, API reference, troubleshooting |
 | `start.sh` | One-command background start — nohup uvicorn + claude controller; logs to `logs/` |
 | `stop_all.sh` | Kill uvicorn, open_claude.sh, and claude --print processes |
 | `open_claude.sh` | Poll loop: spawns a fresh `claude --print < skill.md` per job |
