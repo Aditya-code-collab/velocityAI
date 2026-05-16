@@ -415,38 +415,62 @@
   .reason-modal-bar { height: 7px; border-radius: 4px; background: var(--border); overflow: hidden; }
   .reason-modal-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
 
-  /* Summary chips row */
-  .rm-chips { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 28px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-  .rm-chip {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700;
-  }
-  .rm-chip.deduct { background: rgba(239,68,68,0.12); color: #ef4444; }
-  .rm-chip.bonus  { background: rgba(34,197,94,0.12);  color: #22c55e; }
-
   /* Scrollable body */
   .reason-modal-body {
     overflow-y: auto; padding: 16px 28px 22px;
     flex: 1;
   }
-  .rm-items { display: flex; flex-direction: column; gap: 10px; }
+
+  /* Score math row: Baseline → deductions → final */
+  .rm-math {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    margin-bottom: 18px; font-size: 13px;
+  }
+  .rm-math-base {
+    padding: 4px 12px; border-radius: 20px;
+    background: rgba(148,163,184,0.15); color: var(--muted);
+    font-weight: 600;
+  }
+  .rm-math-arrow { color: var(--muted); font-size: 11px; }
+  .rm-math-chip {
+    padding: 4px 10px; border-radius: 20px; font-weight: 700; font-size: 12px;
+  }
+  .rm-math-chip.deduct { background: rgba(239,68,68,0.14); color: #ef4444; }
+  .rm-math-chip.bonus  { background: rgba(34,197,94,0.14);  color: #22c55e; }
+  .rm-math-final {
+    padding: 4px 12px; border-radius: 20px; font-weight: 800; font-size: 13px;
+  }
+
+  /* Positives / deductions sections */
+  .rm-section-title {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--muted); margin: 14px 0 8px; font-weight: 600;
+  }
+  .rm-items { display: flex; flex-direction: column; gap: 7px; }
   .rm-item {
     display: flex; gap: 10px; align-items: flex-start;
-    font-size: 13.5px; line-height: 1.6; color: var(--text);
+    font-size: 13px; line-height: 1.55; color: var(--text);
+    padding: 8px 12px; border-radius: 8px;
   }
-  .rm-item-icon { flex-shrink: 0; width: 20px; text-align: center; margin-top: 2px; font-size: 13px; }
+  .rm-item.positive { background: rgba(34,197,94,0.07); border: 1px solid rgba(34,197,94,0.18); }
+  .rm-item.negative { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.18); }
+  .rm-item-icon { flex-shrink: 0; font-size: 14px; margin-top: 1px; }
   .rm-item.positive .rm-item-icon { color: #22c55e; }
   .rm-item.negative .rm-item-icon { color: #ef4444; }
-  .rm-item.neutral  .rm-item-icon { color: var(--muted); }
   .rm-item-text { flex: 1; }
-  .rm-item-text .rm-badge {
-    display: inline-flex; align-items: center;
-    padding: 1px 7px; border-radius: 12px; font-size: 11px; font-weight: 700;
-    margin-left: 4px; vertical-align: middle;
+  .rm-item-points {
+    flex-shrink: 0; font-weight: 800; font-size: 12px;
+    padding: 2px 8px; border-radius: 12px; align-self: center;
   }
-  .rm-badge.deduct { background: rgba(239,68,68,0.15); color: #ef4444; }
-  .rm-badge.bonus  { background: rgba(34,197,94,0.15);  color: #22c55e; }
-  .rm-badge.neutral { background: rgba(156,163,175,0.15); color: #9ca3af; }
+  .rm-item.negative .rm-item-points { background: rgba(239,68,68,0.15); color: #ef4444; }
+  .rm-item.positive .rm-item-points { background: rgba(34,197,94,0.15);  color: #22c55e; }
+
+  /* Summary line at bottom */
+  .rm-summary {
+    margin-top: 16px; padding: 10px 14px; border-radius: 8px;
+    background: rgba(148,163,184,0.08); border: 1px solid var(--border);
+    font-size: 12.5px; line-height: 1.6; color: var(--muted); font-style: italic;
+  }
 
   /* ── Checkpoints ── */
   .checkpoints-grid {
@@ -492,6 +516,120 @@
     font-size: 14px; line-height: 1.6;
     padding-left: 12px; border-left: 3px solid var(--accent);
     color: var(--text);
+  }
+
+  /* ── Coach banner ── */
+  .coach-banner {
+    display: flex; align-items: center; gap: 18px;
+    padding: 18px 20px; border-radius: 14px;
+    margin-bottom: 18px;
+    border: 1px solid rgba(255,255,255,0.06);
+    position: relative; overflow: hidden;
+  }
+  .coach-avatar {
+    position: relative; flex-shrink: 0;
+  }
+  .coach-ring {
+    position: relative; width: 72px; height: 72px;
+  }
+  .coach-ring-fill {
+    animation: coach-ring-draw 1.2s cubic-bezier(.4,0,.2,1) forwards;
+    transform-origin: center;
+  }
+  @keyframes coach-ring-draw {
+    from { stroke-dasharray: 0 999; }
+  }
+  .coach-icon {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    animation: coach-pop 0.6s cubic-bezier(.34,1.56,.64,1) forwards;
+  }
+  @keyframes coach-pop {
+    from { transform: scale(0.4); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+  /* Floating sparks */
+  .coach-sparks { position: absolute; inset: 0; pointer-events: none; }
+  .spark {
+    position: absolute; width: 6px; height: 6px;
+    border-radius: 50%;
+    animation: spark-float 2.4s ease-in-out infinite;
+  }
+  .s1 { background: var(--green);   top: 4px;  left: 4px;  animation-delay: 0s; }
+  .s2 { background: var(--accent2); top: 4px;  right: 4px; animation-delay: 0.6s; }
+  .s3 { background: var(--yellow);  bottom:4px;left: 4px;  animation-delay: 1.2s; }
+  .s4 { background: var(--green);   bottom:4px;right:4px;  animation-delay: 1.8s; }
+  @keyframes spark-float {
+    0%,100% { transform: translateY(0) scale(1);   opacity: 0.7; }
+    50%      { transform: translateY(-8px) scale(1.3); opacity: 1; }
+  }
+  .coach-text { flex: 1; min-width: 0; }
+  .coach-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.8px; color: var(--muted); margin-bottom: 4px;
+  }
+  .coach-message {
+    font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--text);
+    margin-bottom: 10px;
+  }
+  .coach-score-row {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .coach-pill {
+    font-size: 11px; font-weight: 700; padding: 3px 9px;
+    border-radius: 20px; border: 1px solid; white-space: nowrap; flex-shrink: 0;
+  }
+  .coach-bar-wrap {
+    flex: 1; height: 5px; background: rgba(255,255,255,0.08);
+    border-radius: 3px; overflow: hidden;
+  }
+  .coach-bar-fill {
+    height: 100%; border-radius: 3px;
+    animation: bar-grow 1s cubic-bezier(.4,0,.2,1) forwards;
+    transform-origin: left;
+  }
+  @keyframes bar-grow {
+    from { width: 0 !important; }
+  }
+
+  /* ── Coach feedback blocks ── */
+  .coach-block {
+    margin-bottom: 14px; padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .coach-block-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 6px;
+  }
+  .coach-block-body {
+    font-size: 13px; line-height: 1.7; color: var(--text);
+  }
+  .coach-well { border-left: 3px solid var(--green); }
+  .coach-improve { border-left: 3px solid var(--yellow); }
+
+  .coach-priority {
+    padding: 13px 15px;
+    background: rgba(108,99,255,0.1);
+    border: 1px solid rgba(108,99,255,0.25);
+    border-radius: 10px; margin-bottom: 12px;
+  }
+  .coach-priority-label {
+    font-size: 11px; font-weight: 700; color: var(--accent2);
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;
+  }
+  .coach-priority-body {
+    font-size: 13px; line-height: 1.6; color: var(--text);
+  }
+
+  .coach-closing {
+    font-size: 13px; line-height: 1.6;
+    color: var(--accent2); font-style: italic;
+    padding: 10px 14px;
+    background: rgba(167,139,250,0.06);
+    border-radius: 8px; border-left: 3px solid var(--accent2);
   }
 
   .transcript-details summary { cursor: pointer; list-style: none; user-select: none; }
@@ -1166,10 +1304,7 @@
       </div>
       <div class="reason-modal-bar"><div class="reason-modal-bar-fill" id="rmBar"></div></div>
     </div>
-    <div class="rm-chips" id="rmChips"></div>
-    <div class="reason-modal-body">
-      <div class="rm-items" id="rmBody"></div>
-    </div>
+    <div class="reason-modal-body" id="rmBody"></div>
   </div>
 </div>
 
@@ -1218,42 +1353,6 @@ function scoreColor(s) {
   return '#ef4444';
 }
 
-function parseReasonIntoItems(text) {
-  // Split on sentence boundaries (". " or newlines), keep non-empty
-  const sentences = text
-    .split(/(?<=\.)\s+|\n+/)
-    .map(s => s.trim())
-    .filter(Boolean);
-
-  // Regex to detect deduction/bonus tokens like (−10), (-15 each), (+5), (−14 each)
-  const tokenRe = /\(([\+\-−]+\s*\d+(?:\s+each)?)\)/g;
-
-  return sentences.map(sentence => {
-    const deductions = [];
-    const bonuses = [];
-    let m;
-    while ((m = tokenRe.exec(sentence)) !== null) {
-      const raw = m[1].replace('−', '-');
-      if (raw.startsWith('+')) bonuses.push(m[1]);
-      else deductions.push(m[1]);
-    }
-    tokenRe.lastIndex = 0; // reset
-
-    const hasDeduct = deductions.length > 0;
-    const hasBonus  = bonuses.length > 0;
-    const type = hasDeduct ? 'negative' : hasBonus ? 'positive' : 'neutral';
-    const icon = hasDeduct ? '▼' : hasBonus ? '▲' : '•';
-
-    // Annotate tokens inline with badges
-    const html = sentence.replace(tokenRe, (match, tok) => {
-      const cls = tok.replace('−', '-').startsWith('+') ? 'bonus' : 'deduct';
-      return `<span class="rm-badge ${cls}">${match}</span>`;
-    });
-
-    return { type, icon, html, deductions, bonuses };
-  });
-}
-
 function openReasonModal(dimKey, score) {
   const label = DIM_LABELS[dimKey] || dimKey;
   const color = typeof score === 'number' ? scoreColor(score) : 'var(--muted)';
@@ -1267,34 +1366,78 @@ function openReasonModal(dimKey, score) {
   bar.style.width = (typeof score === 'number' ? score : 0) + '%';
   bar.style.background = color;
 
-  const rawText = currentScoreReasons[dimKey] || '';
-  const items = rawText ? parseReasonIntoItems(rawText) : [];
+  const reason = currentScoreReasons[dimKey];
+  const bodyEl = document.getElementById('rmBody');
 
-  // Build summary chips (aggregate all deductions + bonuses)
-  const allDeduct = items.flatMap(i => i.deductions);
-  const allBonus  = items.flatMap(i => i.bonuses);
-  const chipsEl = document.getElementById('rmChips');
-  if (allDeduct.length === 0 && allBonus.length === 0) {
-    chipsEl.style.display = 'none';
-  } else {
-    chipsEl.style.display = 'flex';
-    chipsEl.innerHTML = [
-      ...allDeduct.map(d => `<span class="rm-chip deduct">▼ ${d}</span>`),
-      ...allBonus.map(b => `<span class="rm-chip bonus">▲ ${b}</span>`),
-    ].join('');
+  if (!reason) {
+    bodyEl.innerHTML = '<p style="color:var(--muted);font-size:13px;margin:0">No breakdown recorded for this score.</p>';
+    document.getElementById('reasonOverlay').classList.add('open');
+    return;
   }
 
-  // Build body items
-  const bodyEl = document.getElementById('rmBody');
-  if (!rawText) {
-    bodyEl.innerHTML = '<div class="rm-item neutral"><span class="rm-item-icon">•</span><span class="rm-item-text" style="color:var(--muted)">No reason recorded for this score.</span></div>';
+  // Structured format: {baseline, positives, deductions, summary}
+  if (typeof reason === 'object' && reason !== null) {
+    const { baseline, positives = [], deductions = [], summary = '' } = reason;
+    const parts = [];
+
+    // Score math row
+    const totalDeduct = deductions.reduce((s, d) => s + (d.points || 0), 0);
+    const totalBonus  = positives.reduce((s, p) => s + (p.points || 0), 0);
+    if (baseline !== undefined) {
+      let mathHtml = `<span class="rm-math-base">Baseline ${baseline}</span>`;
+      if (totalDeduct < 0) mathHtml += `<span class="rm-math-arrow">→</span><span class="rm-math-chip deduct">${totalDeduct}</span>`;
+      if (totalBonus  > 0) mathHtml += `<span class="rm-math-arrow">→</span><span class="rm-math-chip bonus">+${totalBonus}</span>`;
+      if (totalDeduct < 0 || totalBonus > 0) {
+        const finalVal = typeof score === 'number' ? score : (baseline + totalDeduct + totalBonus);
+        mathHtml += `<span class="rm-math-arrow">→</span><span class="rm-math-final" style="background:${color}22;color:${color}">${finalVal}</span>`;
+      }
+      parts.push(`<div class="rm-math">${mathHtml}</div>`);
+    }
+
+    // Positives section
+    if (positives.length > 0) {
+      const rows = positives.map(p => {
+        const pts = p.points > 0 ? `<span class="rm-item-points">+${p.points}</span>` : '';
+        return `<div class="rm-item positive">
+          <span class="rm-item-icon">✓</span>
+          <span class="rm-item-text">${p.detail}</span>
+          ${pts}
+        </div>`;
+      }).join('');
+      parts.push(`<div class="rm-section-title">What went well</div><div class="rm-items">${rows}</div>`);
+    }
+
+    // Deductions section
+    if (deductions.length > 0) {
+      const rows = deductions.map(d => {
+        const pts = d.points ? `<span class="rm-item-points">${d.points}</span>` : '';
+        return `<div class="rm-item negative">
+          <span class="rm-item-icon">✗</span>
+          <span class="rm-item-text">${d.detail}</span>
+          ${pts}
+        </div>`;
+      }).join('');
+      parts.push(`<div class="rm-section-title">Deductions</div><div class="rm-items">${rows}</div>`);
+    }
+
+    if (positives.length === 0 && deductions.length === 0) {
+      parts.push(`<p style="color:var(--muted);font-size:13px;margin:0 0 12px">No specific adjustments — dimension not applicable.</p>`);
+    }
+
+    // Summary
+    if (summary) parts.push(`<div class="rm-summary">${summary}</div>`);
+
+    bodyEl.innerHTML = parts.join('');
+
   } else {
-    bodyEl.innerHTML = items.map(({ type, icon, html }) =>
-      `<div class="rm-item ${type}">
-        <span class="rm-item-icon">${icon}</span>
-        <span class="rm-item-text">${html}</span>
+    // Legacy plain-text fallback: split into sentences, render as neutral items
+    const sentences = String(reason).split(/(?<=\.)\s+|\n+/).map(s => s.trim()).filter(Boolean);
+    bodyEl.innerHTML = `<div class="rm-items">${sentences.map(s =>
+      `<div class="rm-item positive" style="background:transparent;border-color:var(--border)">
+        <span class="rm-item-icon" style="color:var(--muted)">•</span>
+        <span class="rm-item-text">${s}</span>
       </div>`
-    ).join('');
+    ).join('')}</div>`;
   }
 
   document.getElementById('reasonOverlay').classList.add('open');
@@ -1709,9 +1852,12 @@ function renderReport(job) {
     </div>
 
     <!-- Coaching Recommendation -->
-    <div class="section">
-      <div class="section-title">Coaching Recommendation</div>
-      <div class="section-body">${renderCoaching(r.recommendation)}</div>
+    <div class="section coaching-section">
+      <div class="section-title">Your Coach</div>
+      <div class="section-body">
+        ${renderCoachingBanner(score, job.agent_name)}
+        ${renderCoaching(r.recommendation)}
+      </div>
     </div>
   `;
 
@@ -1995,38 +2141,113 @@ function closeAgentModal() {
   if (agentTrendChart) { agentTrendChart.destroy(); agentTrendChart = null; }
 }
 
+// ── Coaching banner (motivational animation) ──
+function renderCoachingBanner(score, agentName) {
+  const name = agentName ? agentName.split(' ')[0] : 'You';
+  let mood, icon, gradient, message, ringPct;
+  if (score >= 85) {
+    mood = 'excellent'; icon = '🏆';
+    gradient = 'linear-gradient(135deg,#22c55e22,#16a34a18)';
+    message = `Outstanding call, ${name}! You\'re in the top tier — keep this up.`;
+    ringPct = score;
+  } else if (score >= 70) {
+    mood = 'good'; icon = '⭐';
+    gradient = 'linear-gradient(135deg,#6c63ff22,#a78bfa18)';
+    message = `Solid work, ${name}. A couple of tweaks and you\'ll be hitting the top bracket.`;
+    ringPct = score;
+  } else if (score >= 50) {
+    mood = 'growing'; icon = '🌱';
+    gradient = 'linear-gradient(135deg,#f59e0b22,#fbbf2418)';
+    message = `Good effort, ${name}. The coaching below targets the two moves that\'ll push your score over 70.`;
+    ringPct = score;
+  } else {
+    mood = 'comeback'; icon = '💪';
+    gradient = 'linear-gradient(135deg,#ef444422,#f8717118)';
+    message = `Every great agent has tough calls, ${name}. Read the focus below — one change, next call.`;
+    ringPct = score;
+  }
+
+  const circ = 2 * Math.PI * 28;
+  const dash = (ringPct / 100) * circ;
+  const col = score >= 80 ? 'var(--green)' : score >= 50 ? 'var(--yellow)' : 'var(--red)';
+
+  return `
+  <div class="coach-banner" style="background:${gradient};">
+    <div class="coach-avatar" data-mood="${mood}">
+      <div class="coach-ring">
+        <svg width="72" height="72" viewBox="0 0 72 72">
+          <circle cx="36" cy="36" r="28" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="5"/>
+          <circle cx="36" cy="36" r="28" fill="none" stroke="${col}" stroke-width="5"
+            stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}"
+            stroke-linecap="round" stroke-dashoffset="${(circ * 0.25).toFixed(1)}"
+            class="coach-ring-fill"/>
+        </svg>
+        <div class="coach-icon">${icon}</div>
+      </div>
+      <div class="coach-sparks">
+        <span class="spark s1"></span><span class="spark s2"></span>
+        <span class="spark s3"></span><span class="spark s4"></span>
+      </div>
+    </div>
+    <div class="coach-text">
+      <div class="coach-label">Your Call Coach</div>
+      <div class="coach-message">${message}</div>
+      <div class="coach-score-row">
+        <div class="coach-pill" style="background:${col}22;color:${col};border-color:${col}44;">
+          Score: ${score}/100
+        </div>
+        <div class="coach-bar-wrap">
+          <div class="coach-bar-fill" style="width:${score}%;background:${col};"></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
 // ── Coaching renderer ──
 function renderCoaching(text) {
   if (!text) return '<p style="color:var(--muted);">—</p>';
-  // Parse the structured format: WHAT WENT WELL / WHAT TO IMPROVE / PRIORITY ACTION
-  const sections = [];
-  const wellMatch = text.match(/WHAT WENT WELL[:\s]*\n([\s\S]*?)(?=WHAT TO IMPROVE|PRIORITY ACTION|$)/i);
-  const improveMatch = text.match(/WHAT TO IMPROVE[:\s]*\n([\s\S]*?)(?=PRIORITY ACTION|$)/i);
-  const priorityMatch = text.match(/PRIORITY ACTION[:\s]*\n?([\s\S]*?)$/i);
 
-  if (!wellMatch && !improveMatch && !priorityMatch) {
-    // Fallback for old-format plain text recommendations
+  // New format: WHAT WENT WELL / ONE THING TO TRY NEXT TIME / PRIORITY FOCUS / closing
+  const wellMatch    = text.match(/WHAT WENT WELL[:\s]*\n([\s\S]*?)(?=ONE THING TO TRY|PRIORITY FOCUS|PRIORITY ACTION|$)/i);
+  const nextTimeMatch= text.match(/ONE THING TO TRY(?:\s+NEXT TIME)?[:\s]*\n([\s\S]*?)(?=PRIORITY FOCUS|PRIORITY ACTION|$)/i);
+  const priorityMatch= text.match(/(?:PRIORITY FOCUS|PRIORITY ACTION)[:\s]*\n?([\s\S]*?)(?=\n\n|$)/i);
+  // Closing encouragement = last paragraph after PRIORITY FOCUS block
+  const closingMatch = text.match(/(?:PRIORITY FOCUS|PRIORITY ACTION)[:\s]*\n?[\s\S]*?\n\n([\s\S]+)$/i);
+
+  // Legacy format fallback
+  const legacyImprove = !nextTimeMatch && text.match(/WHAT TO IMPROVE[:\s]*\n([\s\S]*?)(?=PRIORITY ACTION|$)/i);
+  const legacyPriority= !nextTimeMatch && text.match(/PRIORITY ACTION[:\s]*\n?([\s\S]*?)$/i);
+
+  if (!wellMatch && !nextTimeMatch && !legacyImprove && !legacyPriority) {
     return `<p class="rec-text">${text}</p>`;
   }
 
+  const improve = nextTimeMatch || legacyImprove;
+  const priority = priorityMatch || legacyPriority;
+  const improveLabel = nextTimeMatch ? 'One thing to try next time' : 'What to improve';
+
   let html = '';
   if (wellMatch) {
-    html += `<div style="margin-bottom:14px;">
-      <div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">What Went Well</div>
-      <div style="font-size:13px;line-height:1.7;color:var(--text);padding-left:12px;border-left:3px solid var(--green);">${wellMatch[1].trim().replace(/\n/g, '<br>')}</div>
+    html += `<div class="coach-block coach-well">
+      <div class="coach-block-label" style="color:var(--green);">✓ What went well</div>
+      <div class="coach-block-body">${wellMatch[1].trim().replace(/\n/g, '<br>')}</div>
     </div>`;
   }
-  if (improveMatch) {
-    html += `<div style="margin-bottom:14px;">
-      <div style="font-size:12px;font-weight:700;color:var(--yellow);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">What To Improve</div>
-      <div style="font-size:13px;line-height:1.7;color:var(--text);padding-left:12px;border-left:3px solid var(--yellow);">${improveMatch[1].trim().replace(/\n/g, '<br>')}</div>
+  if (improve) {
+    html += `<div class="coach-block coach-improve">
+      <div class="coach-block-label" style="color:var(--yellow);">→ ${improveLabel}</div>
+      <div class="coach-block-body">${improve[1].trim().replace(/\n/g, '<br>')}</div>
     </div>`;
   }
-  if (priorityMatch && priorityMatch[1].trim()) {
-    html += `<div style="padding:12px 14px;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.25);border-radius:10px;">
-      <div style="font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Priority Action</div>
-      <div style="font-size:13px;line-height:1.6;color:var(--text);">${priorityMatch[1].trim().replace(/\n/g, '<br>')}</div>
+  if (priority && priority[1].trim()) {
+    html += `<div class="coach-priority">
+      <div class="coach-priority-label">🎯 Priority focus</div>
+      <div class="coach-priority-body">${priority[1].trim().replace(/\n\n[\s\S]*/,'').replace(/\n/g, '<br>')}</div>
     </div>`;
+  }
+  if (closingMatch && closingMatch[1].trim()) {
+    html += `<div class="coach-closing">${closingMatch[1].trim().replace(/\n/g, '<br>')}</div>`;
   }
   return html;
 }
@@ -2526,7 +2747,10 @@ function renderOutdatedCards(records) {
 
   const cards = sorted.map(r => {
     const sopScore = r.scores?.script_compliance;
-    const gapReason = (r.score_reasons || {}).script_compliance || 'No KB match found for this call topic.';
+    const rawSR = (r.score_reasons || {}).script_compliance;
+    const gapReason = typeof rawSR === 'object' && rawSR !== null
+      ? (rawSR.summary || 'No KB match found for this call topic.')
+      : (rawSR || 'No KB match found for this call topic.');
     return `
     <div class="outdated-card">
       <div class="outdated-card-header">
@@ -2577,7 +2801,10 @@ function exportOutdatedCSV() {
   const lines = [columns.map(csvVal).join(',')];
   const sorted = [...records].sort((a, b) => (a.category || '').localeCompare(b.category || ''));
   for (const r of sorted) {
-    const gapReason = (r.score_reasons || {}).script_compliance || 'No KB match found for this call topic.';
+    const rawSR2 = (r.score_reasons || {}).script_compliance;
+    const gapReason = typeof rawSR2 === 'object' && rawSR2 !== null
+      ? (rawSR2.summary || 'No KB match found for this call topic.')
+      : (rawSR2 || 'No KB match found for this call topic.');
     lines.push([
       r.category,
       r.caller_name, r.agent_name,

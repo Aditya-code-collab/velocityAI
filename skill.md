@@ -252,31 +252,35 @@ Formula: `compliance_score = round(sum(score × weight for each dimension))`
 
 ### 5.1 Structured coaching recommendations
 
-The `recommendation` field MUST be specific and actionable coaching, NOT
-generic advice. Structure it as:
+The `recommendation` field MUST be specific, warm, and actionable coaching written
+directly to the agent — as a supportive coach, NOT an auditor.
 
-1. **What went well** — cite 1–2 specific things the agent did right with
-   evidence from the transcript (quote the agent's actual words).
+**Tone rules (non-negotiable):**
+- Address the agent as **"you"** — never "the agent"
+- Never use "failed", "failure", "incorrect", "wrong", "falsely" — instead: "missed", "next time try", "worth practising"
+- Give exactly **ONE** priority action — not a list, not bullet points
+- Include at least one **copy-paste phrase** the agent can say verbatim next call (wrap in quotes)
+- Keep the entire recommendation under **150 words**
+- Be specific to THIS transcript — zero generic advice
+- **End on a high note** — the last line must be something the agent did genuinely well
 
-2. **What to improve** — for each issue, provide:
-   - The specific rule/checkpoint that was missed
-   - What the agent actually said/did (quote from transcript)
-   - What the agent SHOULD have said/done (quote from the KB script)
-   - Which KB article to review (title from the search results)
-
-3. **Priority action** — the single most impactful change for next call.
+Structure:
+1. **What went well** — one specific positive with a quote from the transcript
+2. **One thing to try next time** — name the gap, show what to say instead (copy-paste phrase), cite the KB article
+3. **Priority focus** — exactly one sentence, the single most impactful habit to build
+4. **Closing encouragement** — one sentence that ends warmly and references something real from the call
 
 Example recommendation:
 ```
 WHAT WENT WELL:
-- Strong greeting and self-introduction: "Good Morning Mr. Patel. I am Rahul Sharma, your account manager from IndiaMART"
-- Good empathy when handling pricing objection: "Sir, I completely understand"
+You nailed the opening — "Good Morning Mr. Patel, I am Rahul Sharma, your account manager from IndiaMART" was word-perfect.
 
-WHAT TO IMPROVE:
-1. Recording disclosure timing: Agent disclosed recording AFTER asking permission to proceed. Per the Upsell Script, the disclosure should come BEFORE asking about experience. Review: "Upsell Script" article.
-2. Objection handling: When customer said "That seems expensive", agent gave a generic statistic ("40% increase"). The KB prescribes comparing IndiaMART cost to offline alternatives (shop rent, staff costs). Review: "Fund Issue (Retention Script - Objection Handling)" article.
+ONE THING TO TRY NEXT TIME:
+When the customer raises a pricing concern, next time try the structured cost-comparison script: "Sir, think of it this way — IndiaMART gives you access to thousands of active buyers at just Rs. 2,500/month. A single shop in a commercial market costs 60–80K/month, and you still wait for walk-ins." This is more persuasive than a general statistic. Review: "Fund Issue (Retention Script - Objection Handling)"
 
-PRIORITY ACTION: Practice the prescribed objection rebuttal for pricing/fund objections — it's the highest-impact gap in this call.
+PRIORITY FOCUS: Practise the fund-issue rebuttal until it feels natural — it's the one phrase that turns pricing hesitations into callbacks.
+
+The empathy you showed when you said "I completely understand" kept Mr. Patel engaged — that's a real skill.
 ```
 
 ### 5.2 Report JSON
@@ -305,14 +309,92 @@ PRIORITY ACTION: Practice the prescribed objection rebuttal for pricing/fund obj
     "knowledge_accuracy": 85
   },
   "score_reasons": {
-    "script_compliance": "Agent used the engagement script but skipped the recording disclosure step (−10) and deviated from the prescribed upsell flow (−15).",
-    "objection_handling": "No objections were raised during the call; dimension not applicable — scored 100.",
-    "call_checkpoints": "Greeting, self-introduction, permission, recording disclosure, and closing were completed. Purpose statement and feedback collection were missed (−14 each).",
-    "wait_compliance": "Agent paused after greeting and permission ask but continued speaking without waiting after the feedback question (−15) and after the objection response (−15).",
-    "agent_sentiment": "Professional and empathetic tone throughout. Used 'I understand' and positive reframing twice. No dismissive or impatient language detected.",
-    "customer_sentiment": "Customer started frustrated about lead quality but gradually became more receptive after the agent explained the BuyLead allocation policy. Ended with neutral-positive sentiment.",
-    "call_outcome": "Agent successfully scheduled a follow-up callback with a clear next step; customer agreed to review the proposal.",
-    "knowledge_accuracy": "All product information was accurate. Agent correctly stated BuyLead limits and allocation rules per KB article. No false promises detected."
+    "script_compliance": {
+      "baseline": 100,
+      "positives": [
+        {"detail": "Followed prescribed greeting format"},
+        {"detail": "Correctly sequenced upsell pitch after addressing concern"}
+      ],
+      "deductions": [
+        {"detail": "Recording disclosure skipped entirely", "points": -10},
+        {"detail": "Deviated from prescribed upsell flow — jumped to price before value", "points": -15}
+      ],
+      "summary": "Agent followed most of the script but missed 2 key mandatory steps."
+    },
+    "objection_handling": {
+      "baseline": 100,
+      "positives": [],
+      "deductions": [],
+      "summary": "No objections were raised during the call — dimension not applicable, scored 100."
+    },
+    "call_checkpoints": {
+      "baseline": 100,
+      "positives": [
+        {"detail": "Greeting ✓"},
+        {"detail": "Self introduction ✓"},
+        {"detail": "Recording disclosure ✓"},
+        {"detail": "Permission to proceed ✓"},
+        {"detail": "Proper closing ✓"}
+      ],
+      "deductions": [
+        {"detail": "Purpose statement not stated", "points": -14},
+        {"detail": "Feedback collection skipped", "points": -14}
+      ],
+      "summary": "5 of 7 mandatory checkpoints hit; purpose statement and feedback collection missed."
+    },
+    "wait_compliance": {
+      "baseline": 100,
+      "positives": [
+        {"detail": "Waited after greeting"},
+        {"detail": "Waited after permission ask"}
+      ],
+      "deductions": [
+        {"detail": "Continued speaking without waiting after feedback question", "points": -15},
+        {"detail": "Continued speaking without waiting after objection response", "points": -15}
+      ],
+      "summary": "Agent paused correctly at 2 of 4 required wait points."
+    },
+    "agent_sentiment": {
+      "baseline": 70,
+      "positives": [
+        {"detail": "Used empathetic phrase 'I completely understand'", "points": 5},
+        {"detail": "Patient language when customer raised pricing concern", "points": 5},
+        {"detail": "Positive reframing — offered cost-per-lead perspective", "points": 5},
+        {"detail": "Used customer's name (Mr. Kumar) throughout", "points": 5}
+      ],
+      "deductions": [],
+      "summary": "Professional and empathetic throughout; +20 bonus above baseline."
+    },
+    "customer_sentiment": {
+      "baseline": 100,
+      "positives": [],
+      "deductions": [
+        {"detail": "Customer started neutral but expressed irrelevancy concern mid-call", "points": -15},
+        {"detail": "Customer raised pricing objection — ended open but not committed", "points": -13}
+      ],
+      "summary": "Customer moved from neutral to concerned to cautiously open; no firm commitment."
+    },
+    "call_outcome": {
+      "baseline": 100,
+      "positives": [
+        {"detail": "Clear next step set — Wednesday callback agreed by customer"}
+      ],
+      "deductions": [
+        {"detail": "No immediate commitment secured — customer needs partner discussion", "points": -25}
+      ],
+      "summary": "Callback scheduled with positive intent; no renewal or upsell confirmed."
+    },
+    "knowledge_accuracy": {
+      "baseline": 100,
+      "positives": [
+        {"detail": "BuyLead filter explanation accurate per KB"},
+        {"detail": "Platform reach framing (Rs. 2,500/month) consistent with KB"}
+      ],
+      "deductions": [
+        {"detail": "Gold package quoted at Rs. 35,000/year — unverified against current KB pricing", "points": -15}
+      ],
+      "summary": "One unverified pricing claim; all other factual statements were accurate."
+    }
   },
   "checkpoints": {
     "greeting": true,
@@ -531,11 +613,110 @@ KNOWLEDGE_ACCURACY:
   },
   "call_outcome_type": "callback_scheduled",
   "customer_sentiment_trajectory": "neutral → concerned → reassured → open",
+  "score_reasons": {
+    "script_compliance": {
+      "baseline": 100,
+      "positives": [
+        {"detail": "Correct greeting: 'Good Morning Mr. Kumar. I am Priya Verma, your account manager from IndiaMART'"},
+        {"detail": "Asked permission to proceed and waited for response"},
+        {"detail": "Gave recording disclosure before feedback question"},
+        {"detail": "Addressed irrelevancy concern before pitching upsell"},
+        {"detail": "Introduced Gold package with value proposition"},
+        {"detail": "Set clear follow-up — Wednesday callback"}
+      ],
+      "deductions": [
+        {"detail": "Objection rebuttal deviated from KB prescribed wording — used general cost comparison instead of structured fund-issue script", "points": -12}
+      ],
+      "summary": "Followed 8 of 9 script rules fully; 1 partial on objection rebuttal wording."
+    },
+    "objection_handling": {
+      "baseline": 100,
+      "positives": [
+        {"detail": "Acknowledged pricing objection empathetically: 'I completely understand, Sir'"},
+        {"detail": "Offered cost-per-reach comparison (Rs. 2,500/month vs offline alternatives)"}
+      ],
+      "deductions": [
+        {"detail": "Did not use prescribed KB rebuttal — missed listing specific included services (PNS, 7 FREE BuyLeads/week, Catalog support)", "points": -25}
+      ],
+      "summary": "Pricing objection handled but not with the exact KB-prescribed rebuttal structure."
+    },
+    "call_checkpoints": {
+      "baseline": 100,
+      "positives": [
+        {"detail": "Greeting ✓ — 'Good Morning Mr. Kumar'"},
+        {"detail": "Self introduction ✓ — 'I am Priya Verma, your account manager from IndiaMART'"},
+        {"detail": "Purpose statement ✓ — 'to take your feedback on the service'"},
+        {"detail": "Recording disclosure ✓ — 'will be recorded for training and quality purpose'"},
+        {"detail": "Permission to proceed ✓ — 'Is this the right time to talk to you?'"},
+        {"detail": "Feedback collection ✓ — 'How has your overall experience been on our platform?'"},
+        {"detail": "Proper closing ✓ — 'Thank you for your time... Have a great day!'"}
+      ],
+      "deductions": [],
+      "summary": "All 7 of 7 mandatory checkpoints completed in correct order."
+    },
+    "wait_compliance": {
+      "baseline": 100,
+      "positives": [
+        {"detail": "Waited after greeting — customer responded 'I am good, thanks'"},
+        {"detail": "Waited after permission ask — customer responded 'Yes, please go ahead'"},
+        {"detail": "Waited after recording disclosure — customer responded 'Okay'"},
+        {"detail": "Waited after experience question — customer gave detailed feedback"},
+        {"detail": "Waited after objection response — customer responded 'Hmm, that makes sense'"}
+      ],
+      "deductions": [],
+      "summary": "Agent waited at every mandatory pause point; full compliance."
+    },
+    "agent_sentiment": {
+      "baseline": 70,
+      "positives": [
+        {"detail": "Empathetic phrasing: 'I completely understand, Sir'", "points": 5},
+        {"detail": "Patient when customer raised irrelevancy and pricing concerns", "points": 5},
+        {"detail": "Positive reframing — reach-per-rupee perspective", "points": 5},
+        {"detail": "Used customer's name 'Mr. Kumar' throughout the call", "points": 5},
+        {"detail": "Proactively offered to help set up BuyLead filter", "points": 7}
+      ],
+      "deductions": [],
+      "summary": "Consistently empathetic, patient, and constructive throughout; +22 above baseline."
+    },
+    "customer_sentiment": {
+      "baseline": 100,
+      "positives": [
+        {"detail": "Customer became more open after cost-comparison reframe"}
+      ],
+      "deductions": [
+        {"detail": "Customer expressed frustration about irrelevant leads mid-call", "points": -15},
+        {"detail": "Customer raised pricing concern and ended call without committing", "points": -13}
+      ],
+      "summary": "Customer moved from neutral → concerned → cautiously open; no firm commitment reached."
+    },
+    "call_outcome": {
+      "baseline": 100,
+      "positives": [
+        {"detail": "Clear next step agreed — Wednesday callback confirmed"}
+      ],
+      "deductions": [
+        {"detail": "No immediate renewal or upsell commitment — needs partner discussion", "points": -25}
+      ],
+      "summary": "Callback scheduled with positive intent; outcome pending partner discussion."
+    },
+    "knowledge_accuracy": {
+      "baseline": 100,
+      "positives": [
+        {"detail": "BuyLead filter explanation accurate per KB"},
+        {"detail": "Platform reach framing (Rs. 2,500/month) consistent with KB pricing comparison"},
+        {"detail": "Priority lead matching feature description accurate for Gold package"}
+      ],
+      "deductions": [
+        {"detail": "Gold package quoted at Rs. 35,000/year — not verified against current KB pricing", "points": -15}
+      ],
+      "summary": "One unverified pricing claim; all other product and feature claims were accurate."
+    }
+  },
   "compliance_score": 87,
   "human_review_required": false,
   "sop_outdated": false,
   "compliance_summary": "Agent followed the combined renewal/upsell script effectively. All 7 checkpoints hit. Strong empathy and professional tone throughout. Addressed irrelevancy concern before pitching upsell. Objection handling used a cost-comparison approach consistent with KB but not the exact prescribed rebuttal wording. Customer moved from concern to openness with a callback scheduled.",
-  "recommendation": "WHAT WENT WELL:\n- Perfect checkpoint execution — all 7/7 hit in correct order\n- Excellent empathy: \"I understand your concern, Sir. Irrelevant leads can be frustrating\"\n- Smart sequencing: addressed the customer's irrelevancy pain point before introducing the upsell\n\nWHAT TO IMPROVE:\n1. Objection handling: When customer said \"That's quite expensive\", agent used a general cost comparison. The KB article \"Fund Issue (Retention Script - Objection Handling)\" prescribes a more specific rebuttal: compare Rs. 2500/month to shop/factory/office costs of 60-80K/month, then list specific included services (Catalog support, Direct Enquiries, PNS Service, 7 FREE Buy Leads/week). Review: \"Fund Issue (Retention Script - Objection Handling)\"\n2. Pricing verification: Agent quoted Rs. 35,000/year for Gold — ensure this matches current pricing in the system.\n\nPRIORITY ACTION: Memorize the structured fund-issue rebuttal from the KB — it's more persuasive than a general cost comparison and covers specific service benefits the customer may not know about."
+  "recommendation": "WHAT WENT WELL:\nYou hit every single checkpoint in the right order — that's a perfect 7/7 and sets the call up for success from the first word.\n\nONE THING TO TRY NEXT TIME:\nWhen Mr. Kumar said \"That's quite expensive\", next time try: \"Sir, think of it this way — IndiaMART costs you about Rs. 2,500 a month. A shop in a commercial market costs 60–80K a month, and you still wait for walk-ins. With Gold, those buyers come to you, pre-filtered for relevance.\" This lands much harder than a general statistic. Review: \"Fund Issue (Retention Script - Objection Handling)\"\n\nPRIORITY FOCUS: Practise that cost-comparison rebuttal until it flows naturally — it's the one script line that most often converts a hesitant customer into a callback.\n\nThe way you proactively offered to set up the BuyLead filter mid-call was genuinely helpful — Mr. Kumar appreciated it and it built real trust."
 }
 ```
 
@@ -591,16 +772,21 @@ Use this calibration to anchor your scoring. A call with all checkpoints hit but
   `false` otherwise. Set this AFTER computing `compliance_score`.
 - `sop_outdated` MUST be a boolean: `true` if the top KB hit score < 0.60,
   `false` otherwise. Set this during the KB relevance check in Step 2.
-- `score_reasons` MUST contain one entry per dimension key. Each reason
-  must be 1–3 sentences explaining what evidence led to that score: what
-  the agent did right, what they missed, and how the deductions were
-  applied. For N/A dimensions write why the dimension does not apply.
+- `score_reasons` MUST contain one structured object per dimension key. Each object MUST have:
+  - `baseline` (integer): starting score before any adjustments (100 for most dims; 70 for agent_sentiment)
+  - `positives` (array): things the agent did correctly — each item is `{"detail": "..."}`.
+    For agent_sentiment where bonuses are explicitly added, include `"points": <positive integer>`.
+    Use an empty array `[]` if nothing positive was observed.
+  - `deductions` (array): specific things that reduced the score — each item is `{"detail": "...", "points": <negative integer>}`.
+    Points MUST be the actual numeric deduction (e.g. -10, -15, -25). Use an empty array `[]` if no deductions.
+  - `summary` (string): one sentence overall assessment for this dimension.
+  For N/A dimensions (e.g. no objections raised), set positives/deductions to `[]` and explain in summary.
 - For `script_compliance`, `objection_handling`, and `knowledge_accuracy`
-  reasons: if top KB hit score < 0.60, begin the reason with "No matching
+  score_reasons: if top KB hit score < 0.60, set `summary` to begin with "No matching
   SOP was found for this call topic — the knowledge base appears to be
   outdated or incomplete for this category and needs to be updated." Then
-  still provide the full per-dimension analysis based on the transcript.
-  If score ≥ 0.60, proceed directly with the analysis (no caveat needed).
+  still populate positives/deductions based on what was observable in the transcript.
+  If score ≥ 0.60, proceed with normal structured output (no caveat needed).
 - The `scores` object, `checkpoints` object, `call_outcome_type`, and
   `customer_sentiment_trajectory` are REQUIRED fields in every report.
 - Step 2.5 (rule extraction + audit trail) is MANDATORY. Do not skip it.
@@ -608,4 +794,8 @@ Use this calibration to anchor your scoring. A call with all checkpoints hit but
 - Violations must include `kb_article` field referencing which KB article
   defines the rule that was broken.
 - The `recommendation` field MUST follow the structured format:
-  WHAT WENT WELL / WHAT TO IMPROVE / PRIORITY ACTION.
+  WHAT WENT WELL / ONE THING TO TRY NEXT TIME / PRIORITY FOCUS / closing encouragement.
+- The `recommendation` field MUST use supportive coaching tone: address the agent as "you",
+  never use "failed"/"incorrect"/"wrong" (use "missed"/"next time try" instead), include
+  exactly one copy-paste phrase the agent can say verbatim, keep total under 150 words,
+  and end on a positive note referencing something specific from the call.
