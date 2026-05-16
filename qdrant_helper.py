@@ -391,6 +391,8 @@ def store_report(job: dict, report: dict):
             "created_at": datetime.utcnow().isoformat(),
             "category": report.get("category"),
             "violations_found": bool(report.get("violations_found", False)),
+            "human_review_required": bool(report.get("human_review_required", False)),
+            "sop_outdated": bool(report.get("sop_outdated", False)),
             "compliance_score": report.get("compliance_score"),
             "violations": report.get("violations", []),
             "compliance_summary": summary,

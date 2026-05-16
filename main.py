@@ -39,7 +39,7 @@ def startup():
 
 @app.get("/")
 def root():
-    return FileResponse("static/index.html")
+    return FileResponse("static/index.html", headers={"Cache-Control": "no-store"})
 
 
 # ── request / response models ────────────────────────────────────────────────

@@ -268,6 +268,8 @@
   }
   .badge-ok { background: rgba(34,197,94,0.15); color: var(--green); }
   .badge-fail { background: rgba(239,68,68,0.15); color: var(--red); }
+  .badge-review { background: rgba(234,179,8,0.15); color: var(--yellow); }
+  .badge-outdated { background: rgba(139,92,246,0.15); color: #8b5cf6; }
 
   .meta-grid {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -1164,6 +1166,8 @@ function renderReport(job) {
         <span class="badge ${r.violations_found ? 'badge-fail' : 'badge-ok'}">
           ${r.violations_found ? `${violations.length} Violation${violations.length !== 1 ? 's' : ''}` : 'Fully Compliant'}
         </span>
+        ${r.human_review_required ? `<span class="badge badge-review">Human Review Required</span>` : ''}
+        ${r.sop_outdated ? `<span class="badge badge-outdated">SOP Outdated</span>` : ''}
         ${outcomeType ? `<span class="outcome-tag" style="background:${OUTCOME_COLORS[outcomeType] || 'var(--accent)'}22;color:${OUTCOME_COLORS[outcomeType] || 'var(--accent)'};">${outcomeType.replace(/_/g,' ')}</span>` : ''}
         ${trajectory ? `<span class="trajectory-tag" style="margin-left:4px;">${trajectory}</span>` : ''}
         <div class="meta-grid">
@@ -1687,7 +1691,7 @@ function renderFlaggedTable(records) {
 
   const headerRow = [
     'Caller Name', 'Caller ID', 'Agent Name', 'Agent ID', 'Category',
-    'Score', ...FLAGGED_DIM_ABBR, 'Summary', 'Recommendation', 'Time',
+    'Score', 'Human Review', 'SOP Outdated', ...FLAGGED_DIM_ABBR, 'Summary', 'Recommendation', 'Time',
   ].map(h => `<th>${h}</th>`).join('');
 
   const rows = records.map(r => {
@@ -1710,6 +1714,8 @@ function renderFlaggedTable(records) {
       <td style="font-family:monospace;font-size:12px;">${r.agent_id || '—'}</td>
       <td style="font-size:12px;">${formatCat(r.category)}</td>
       <td><span class="flagged-score" style="color:${scColor}">${sc}</span></td>
+      <td>${r.human_review_required ? `<span class="badge badge-review" style="font-size:11px;padding:2px 7px;">Yes</span>` : `<span style="color:var(--muted);font-size:12px;">No</span>`}</td>
+      <td>${r.sop_outdated ? `<span class="badge badge-outdated" style="font-size:11px;padding:2px 7px;">Yes</span>` : `<span style="color:var(--muted);font-size:12px;">No</span>`}</td>
       ${dims}
       <td><span class="flagged-trunc" title="${esc(summary)}">${esc(summaryTrunc)}</span></td>
       <td><span class="flagged-trunc" title="${esc(rec)}">${esc(recTrunc)}</span></td>
@@ -1742,7 +1748,7 @@ function exportFlaggedCSV() {
 
   const columns = [
     'Caller Name', 'Caller ID', 'Agent Name', 'Agent ID', 'Category',
-    'Overall Score', 'SOP Compliance', 'Objection Handling',
+    'Overall Score', 'Human Review Required', 'SOP Outdated', 'SOP Compliance', 'Objection Handling',
     'Call Checkpoints', 'Wait Compliance', 'Agent Sentiment',
     'Customer Sentiment', 'Call Outcome', 'Knowledge Accuracy',
     'Summary', 'Recommendation', 'Timestamp',
@@ -1753,7 +1759,7 @@ function exportFlaggedCSV() {
     const sc = r.scores || {};
     lines.push([
       r.caller_name, r.caller_id, r.agent_name, r.agent_id, r.category,
-      r.compliance_score,
+      r.compliance_score, r.human_review_required ? 'Yes' : 'No', r.sop_outdated ? 'Yes' : 'No',
       sc.script_compliance, sc.objection_handling, sc.call_checkpoints,
       sc.wait_compliance, sc.agent_sentiment, sc.customer_sentiment,
       sc.call_outcome, sc.knowledge_accuracy,

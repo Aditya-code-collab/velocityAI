@@ -36,8 +36,8 @@ full IndiaMART help/policy article — that is the compliance reference text.
 
 After receiving the search results, check the top hit's `score`:
 
-- **score ≥ 0.60** — sufficient match; proceed with normal scoring.
-- **score < 0.60** — no matching SOP found. For `script_compliance`,
+- **score ≥ 0.60** — sufficient match; proceed with normal scoring. Set `sop_outdated: false`.
+- **score < 0.60** — no matching SOP found. Set `sop_outdated: true`. For `script_compliance`,
   `objection_handling`, and `knowledge_accuracy` score_reasons, begin with:
   "No matching SOP was found for this call topic — the knowledge base
   appears to be outdated or incomplete for this category and needs to be
@@ -301,6 +301,8 @@ PRIORITY ACTION: Practice the prescribed objection rebuttal for pricing/fund obj
   "call_outcome_type": "callback_scheduled",
   "customer_sentiment_trajectory": "neutral → concerned → reassured",
   "compliance_score": 80,
+  "human_review_required": false,
+  "sop_outdated": false,
   "compliance_summary": "...",
   "recommendation": "WHAT WENT WELL:\n- ...\n\nWHAT TO IMPROVE:\n1. ...\n\nPRIORITY ACTION: ..."
 }
@@ -315,6 +317,11 @@ Set `violations_found: true` if ANY of these conditions are met:
 - `knowledge_accuracy` < 70 (factual errors are always flagged)
 
 Each missed checkpoint or failed rule becomes a violation entry.
+
+### 5.4 Human review flag
+
+Set `human_review_required: true` if `compliance_score` < 70, otherwise `false`.
+This flag is independent of `violations_found` and must always be present in the report JSON.
 
 ## Step 6 — Persist the report
 
@@ -504,8 +511,12 @@ Use this calibration to anchor your scoring. A call with all checkpoints hit but
 - ALL eight scores MUST be computed for every transcript, even if some
   dimensions are not applicable (score them 100 with a note).
 - The `scores` object, `checkpoints` object, `call_outcome_type`,
-  `customer_sentiment_trajectory`, and `score_reasons` are REQUIRED fields
-  in every report.
+  `customer_sentiment_trajectory`, `score_reasons`, `human_review_required`,
+  and `sop_outdated` are REQUIRED fields in every report.
+- `human_review_required` MUST be a boolean: `true` if `compliance_score` < 70,
+  `false` otherwise. Set this AFTER computing `compliance_score`.
+- `sop_outdated` MUST be a boolean: `true` if the top KB hit score < 0.60,
+  `false` otherwise. Set this during the KB relevance check in Step 2.
 - `score_reasons` MUST contain one entry per dimension key. Each reason
   must be 1–3 sentences explaining what evidence led to that score: what
   the agent did right, what they missed, and how the deductions were
