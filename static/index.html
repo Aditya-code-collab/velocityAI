@@ -175,8 +175,49 @@
   .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
   /* ── Jobs list ── */
-  .jobs-section { border-top: 1px solid var(--border); }
+  .jobs-section { border-top: 1px solid var(--border); flex-shrink: 0; }
   .jobs-list { overflow-y: auto; max-height: 220px; }
+
+  /* Collapsible jobs body */
+  .jobs-collapsible {
+    overflow: hidden;
+    max-height: 520px;
+    opacity: 1;
+    transition: max-height 0.28s cubic-bezier(0.4,0,0.2,1), opacity 0.2s ease;
+  }
+  .jobs-section.collapsed .jobs-collapsible {
+    max-height: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+  /* Header toggle row */
+  .jobs-header {
+    display: flex; align-items: center;
+    padding: 12px 20px 10px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer; user-select: none;
+    background: var(--surface);
+    transition: background 0.12s;
+  }
+  .jobs-header:hover { background: var(--surface2); }
+  .jobs-toggle-icon {
+    font-size: 11px; color: var(--muted);
+    transition: transform 0.22s cubic-bezier(0.4,0,0.2,1);
+    margin-right: 7px; display: inline-block; line-height: 1;
+  }
+  .jobs-section.collapsed .jobs-toggle-icon { transform: rotate(-90deg); }
+  .jobs-header-label {
+    font-size: 12px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.6px; flex: 1;
+  }
+  .jobs-count-pill {
+    background: rgba(108,99,255,0.15); color: var(--accent2);
+    font-size: 11px; font-weight: 700; border-radius: 20px;
+    padding: 1px 8px; margin-left: 6px;
+    transition: opacity 0.2s;
+  }
+  .jobs-count-pill.empty { opacity: 0; }
+
   .filter-tabs {
     display: flex; gap: 4px; padding: 8px 20px 0;
     border-bottom: 1px solid var(--border); background: var(--surface);
@@ -553,6 +594,105 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
+  /* ── Transcript textarea glow ── */
+  textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(108,99,255,0.12), 0 0 16px rgba(108,99,255,0.08);
+  }
+
+  /* ── Audio drop zone (enhanced) ── */
+  .audio-dzn {
+    min-height: 160px;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #audioDropEmpty {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 4px;
+    pointer-events: none;
+  }
+  /* Idle animated bars */
+  .audio-idle-bars {
+    display: flex; align-items: center; gap: 3px;
+    height: 36px; margin-bottom: 2px;
+  }
+  .audio-idle-bars span {
+    display: inline-block; width: 4px; border-radius: 2px;
+    background: var(--accent);
+    animation: idleBar 1.4s ease-in-out infinite;
+  }
+  .audio-idle-bars span:nth-child(1){height:8px;  animation-delay:0s;}
+  .audio-idle-bars span:nth-child(2){height:18px; animation-delay:0.1s;}
+  .audio-idle-bars span:nth-child(3){height:28px; animation-delay:0.2s;}
+  .audio-idle-bars span:nth-child(4){height:14px; animation-delay:0.3s;}
+  .audio-idle-bars span:nth-child(5){height:34px; animation-delay:0.12s;}
+  .audio-idle-bars span:nth-child(6){height:20px; animation-delay:0.22s;}
+  .audio-idle-bars span:nth-child(7){height:10px; animation-delay:0.05s;}
+  .audio-idle-bars span:nth-child(8){height:24px; animation-delay:0.32s;}
+  .audio-idle-bars span:nth-child(9){height:16px; animation-delay:0.17s;}
+  @keyframes idleBar {
+    0%,100%{ transform:scaleY(0.45); opacity:0.25; }
+    50%    { transform:scaleY(1);    opacity:0.65; }
+  }
+  /* Audio player UI */
+  #audioPlayerUI { width:100%; }
+  .audio-file-info {
+    display:flex; align-items:center; gap:8px;
+    margin-bottom:10px; font-size:12px;
+    color:var(--green); font-weight:600;
+  }
+  .audio-file-name {
+    flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  #waveformCanvas {
+    display:block; width:100%; height:64px;
+    border-radius:8px; background:rgba(0,0,0,0.25);
+    margin-bottom:10px; cursor:pointer;
+  }
+  .audio-controls {
+    display:flex; align-items:center; gap:10px;
+  }
+  .audio-play-btn {
+    width:34px; height:34px; flex-shrink:0;
+    background:var(--accent); color:#fff;
+    border:none; border-radius:50%; cursor:pointer;
+    font-size:12px; display:flex; align-items:center; justify-content:center;
+    transition:background 0.15s, transform 0.1s, box-shadow 0.15s;
+    box-shadow: 0 2px 10px rgba(108,99,255,0.35);
+  }
+  .audio-play-btn:hover { background:#5a52e0; transform:scale(1.1); }
+  .audio-play-btn.playing {
+    background:var(--green);
+    box-shadow: 0 2px 10px rgba(34,197,94,0.4);
+    animation: playPulse 1.8s ease-in-out infinite;
+  }
+  @keyframes playPulse {
+    0%,100%{ box-shadow:0 2px 10px rgba(34,197,94,0.4); }
+    50%    { box-shadow:0 2px 18px rgba(34,197,94,0.7); }
+  }
+  .audio-progress-wrap { flex:1; }
+  .audio-progress-bar {
+    height:4px; background:var(--border); border-radius:2px;
+    cursor:pointer; margin-bottom:4px; overflow:hidden;
+    position:relative;
+  }
+  .audio-progress-fill {
+    height:100%; border-radius:2px; width:0%;
+    background:linear-gradient(90deg, var(--accent), var(--accent2));
+    transition:width 0.1s linear;
+  }
+  .audio-time {
+    font-size:10px; color:var(--muted); font-family:monospace;
+  }
+  .audio-change-link {
+    font-size:11px; color:var(--muted); text-align:center;
+    margin-top:8px; cursor:pointer;
+    transition:color 0.15s;
+  }
+  .audio-change-link:hover { color:var(--accent2); }
+
   /* ── Flagged Calls page ── */
   .flagged-page {
     flex-direction: column;
@@ -816,11 +956,36 @@
 
             <!-- Audio mode -->
             <div id="audioInputMode" style="display:none">
-              <div class="drop-zone" id="audioDrop">
+              <div class="drop-zone audio-dzn" id="audioDrop">
                 <input type="file" id="audioInput" accept=".wav,.mp3,.m4a,.ogg,.flac,.webm,.aac,.amr,.mp4" />
-                <div class="dz-text"><b>Click or drop</b> an audio file</div>
-                <div class="dz-text" style="font-size:11px;">.wav · .mp3 · .m4a · .ogg · .flac · .webm</div>
-                <div class="dz-filename" id="audioFilename" style="display:none"></div>
+                <!-- Empty / idle state -->
+                <div id="audioDropEmpty">
+                  <div class="audio-idle-bars">
+                    <span></span><span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span>
+                  </div>
+                  <div class="dz-text" style="margin-top:4px;"><b>Click or drop</b> an audio file</div>
+                  <div class="dz-text" style="font-size:11px;">.wav · .mp3 · .m4a · .ogg · .flac · .webm</div>
+                </div>
+                <!-- Player state (shown after file selected) -->
+                <div id="audioPlayerUI" style="display:none;width:100%;">
+                  <div class="audio-file-info">
+                    <span>🎵</span>
+                    <span id="audioFileName" class="audio-file-name"></span>
+                    <span id="audioFileSize" style="color:var(--muted);font-size:11px;font-weight:400;flex-shrink:0;"></span>
+                  </div>
+                  <canvas id="waveformCanvas" height="64"></canvas>
+                  <div class="audio-controls">
+                    <button id="audioPlayBtn" class="audio-play-btn" type="button">▶</button>
+                    <div class="audio-progress-wrap">
+                      <div class="audio-progress-bar" id="audioProgressBar">
+                        <div class="audio-progress-fill" id="audioProgressFill"></div>
+                      </div>
+                      <div class="audio-time" id="audioTime">0:00 / 0:00</div>
+                    </div>
+                  </div>
+                  <div class="audio-change-link" id="audioChangeLink">↩ Change file</div>
+                </div>
               </div>
               <div class="audio-info">
                 Audio will be transcribed via <b>Sarvam AI Saarika v2.5</b> — optimised for Indian languages &amp; Hinglish. Supports up to ~30 min per file.
@@ -851,24 +1016,27 @@
         </form>
       </div>
 
-      <div class="jobs-section">
-        <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between;">
-          <span>Recent Jobs</span>
-          <span id="jobCount" style="color:var(--text);font-size:12px;text-transform:none;letter-spacing:0;"></span>
+      <div class="jobs-section collapsed" id="jobsSection">
+        <div class="jobs-header" onclick="toggleJobsSection()">
+          <span class="jobs-toggle-icon">▾</span>
+          <span class="jobs-header-label">Recent Jobs</span>
+          <span class="jobs-count-pill empty" id="jobCount"></span>
         </div>
-        <div class="filter-tabs">
-          <div class="filter-tab active" id="tabAll" onclick="setFilter('all')">All</div>
-          <div class="filter-tab" id="tabFlagged" onclick="setFilter('flagged')">
-            Flagged <span class="tab-badge" id="flaggedCount">0</span>
+        <div class="jobs-collapsible">
+          <div class="filter-tabs">
+            <div class="filter-tab active" id="tabAll" onclick="setFilter('all')">All</div>
+            <div class="filter-tab" id="tabFlagged" onclick="setFilter('flagged')">
+              Flagged <span class="tab-badge" id="flaggedCount">0</span>
+            </div>
           </div>
+          <div class="filter-inputs">
+            <input id="filterCallerId"   type="text" placeholder="Filter by Caller ID…"    oninput="renderJobsList(cachedJobs)" />
+            <input id="filterCallerName" type="text" placeholder="Filter by Caller Name…" oninput="renderJobsList(cachedJobs)" />
+            <input id="filterAgentName"  type="text" placeholder="Filter by Agent Name…"  oninput="renderJobsList(cachedJobs)" />
+            <div class="filter-clear" onclick="clearFilters()">Clear filters</div>
+          </div>
+          <div class="jobs-list" id="jobsList"></div>
         </div>
-        <div class="filter-inputs">
-          <input id="filterCallerId"   type="text" placeholder="Filter by Caller ID…"    oninput="renderJobsList(cachedJobs)" />
-          <input id="filterCallerName" type="text" placeholder="Filter by Caller Name…" oninput="renderJobsList(cachedJobs)" />
-          <input id="filterAgentName"  type="text" placeholder="Filter by Agent Name…"  oninput="renderJobsList(cachedJobs)" />
-          <div class="filter-clear" onclick="clearFilters()">Clear filters</div>
-        </div>
-        <div class="jobs-list" id="jobsList"></div>
       </div>
     </div>
 
@@ -1191,6 +1359,11 @@ function setFilter(f) {
   renderJobsList(cachedJobs);
 }
 
+function toggleJobsSection() {
+  const sec = document.getElementById('jobsSection');
+  sec.classList.toggle('collapsed');
+}
+
 function renderJobsList(jobs) {
   const el = document.getElementById('jobsList');
   const flagged = jobs.filter(j => j.violations_found).length;
@@ -1202,7 +1375,9 @@ function renderJobsList(jobs) {
   if (qCid) visible = visible.filter(j => (j.caller_id || '').toLowerCase().includes(qCid));
   if (qCnm) visible = visible.filter(j => (j.caller_name || '').toLowerCase().includes(qCnm));
   if (qAnm) visible = visible.filter(j => (j.agent_name || '').toLowerCase().includes(qAnm));
-  document.getElementById('jobCount').textContent = `${visible.length} job${visible.length !== 1 ? 's' : ''}`;
+  const pill = document.getElementById('jobCount');
+  pill.textContent = visible.length || '';
+  pill.classList.toggle('empty', visible.length === 0);
   if (!visible.length) {
     el.innerHTML = `<div style="padding:14px 20px;color:var(--muted);font-size:13px;">No jobs yet</div>`;
     return;
@@ -1812,18 +1987,161 @@ dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.clas
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
 dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); loadFile(e.dataTransfer.files[0]); });
 
-// ── Audio file upload ──
-const audioDrop     = document.getElementById('audioDrop');
-const audioInput    = document.getElementById('audioInput');
-const audioFilename = document.getElementById('audioFilename');
+// ── Audio file upload + player ──
+const audioDrop  = document.getElementById('audioDrop');
+const audioInput = document.getElementById('audioInput');
+
+let audioEl       = null;
+let audioCtx      = null;
+let audioAnalyser = null;
+let audioSrc      = null;
+let audioObjUrl   = null;
+let waveAnimId    = null;
+
+function fmtTime(s) {
+  if (!isFinite(s) || isNaN(s)) return '0:00';
+  return Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+}
 
 function loadAudioFile(file) {
   if (!file) return;
+  clearAudioPlayer();
   selectedAudioFile = file;
-  audioFilename.textContent = '✓ ' + file.name + ' (' + (file.size / 1024 / 1024).toFixed(1) + ' MB)';
-  audioFilename.style.display = 'block';
+
+  audioObjUrl = URL.createObjectURL(file);
+  audioEl = new Audio(audioObjUrl);
+  audioEl.preload = 'metadata';
+
+  audioEl.addEventListener('loadedmetadata', () => {
+    document.getElementById('audioTime').textContent = '0:00 / ' + fmtTime(audioEl.duration);
+  });
+  audioEl.addEventListener('timeupdate', updateAudioProgress);
+  audioEl.addEventListener('ended', onAudioEnded);
+
+  // Switch UI
+  audioInput.style.pointerEvents = 'none';
+  document.getElementById('audioDropEmpty').style.display = 'none';
+  const playerUI = document.getElementById('audioPlayerUI');
+  playerUI.style.display = '';
+  document.getElementById('audioFileName').textContent = file.name;
+  document.getElementById('audioFileSize').textContent = (file.size / 1024 / 1024).toFixed(1) + ' MB';
+
+  // Size canvas to container
+  const canvas = document.getElementById('waveformCanvas');
+  canvas.width = playerUI.offsetWidth || 320;
+
+  drawIdleWave();
   showToast(`Audio ready: ${file.name}`);
 }
+
+function clearAudioPlayer() {
+  if (waveAnimId) { cancelAnimationFrame(waveAnimId); waveAnimId = null; }
+  if (audioEl) { audioEl.pause(); audioEl.src = ''; audioEl = null; }
+  if (audioCtx) { audioCtx.close(); audioCtx = null; audioAnalyser = null; audioSrc = null; }
+  if (audioObjUrl) { URL.revokeObjectURL(audioObjUrl); audioObjUrl = null; }
+  selectedAudioFile = null;
+  audioInput.style.pointerEvents = '';
+  audioInput.value = '';
+  document.getElementById('audioDropEmpty').style.display = '';
+  document.getElementById('audioPlayerUI').style.display = 'none';
+  document.getElementById('audioPlayBtn').textContent = '▶';
+  document.getElementById('audioPlayBtn').classList.remove('playing');
+  document.getElementById('audioProgressFill').style.width = '0%';
+  document.getElementById('audioTime').textContent = '0:00 / 0:00';
+  const canvas = document.getElementById('waveformCanvas');
+  if (canvas) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function toggleAudioPlay() {
+  if (!audioEl) return;
+  if (audioEl.paused) {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      audioAnalyser = audioCtx.createAnalyser();
+      audioAnalyser.fftSize = 64;
+      audioSrc = audioCtx.createMediaElementSource(audioEl);
+      audioSrc.connect(audioAnalyser);
+      audioAnalyser.connect(audioCtx.destination);
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    audioEl.play();
+    document.getElementById('audioPlayBtn').textContent = '⏸';
+    document.getElementById('audioPlayBtn').classList.add('playing');
+    drawLiveWave();
+  } else {
+    audioEl.pause();
+    document.getElementById('audioPlayBtn').textContent = '▶';
+    document.getElementById('audioPlayBtn').classList.remove('playing');
+    if (waveAnimId) { cancelAnimationFrame(waveAnimId); waveAnimId = null; }
+    drawIdleWave();
+  }
+}
+
+function onAudioEnded() {
+  document.getElementById('audioPlayBtn').textContent = '▶';
+  document.getElementById('audioPlayBtn').classList.remove('playing');
+  if (waveAnimId) { cancelAnimationFrame(waveAnimId); waveAnimId = null; }
+  drawIdleWave();
+}
+
+function updateAudioProgress() {
+  if (!audioEl || !isFinite(audioEl.duration)) return;
+  const pct = (audioEl.currentTime / audioEl.duration) * 100;
+  document.getElementById('audioProgressFill').style.width = pct + '%';
+  document.getElementById('audioTime').textContent = fmtTime(audioEl.currentTime) + ' / ' + fmtTime(audioEl.duration);
+}
+
+function drawLiveWave() {
+  const canvas = document.getElementById('waveformCanvas');
+  if (!canvas || !audioAnalyser) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const binCount = audioAnalyser.frequencyBinCount;
+  const data = new Uint8Array(binCount);
+
+  function frame() {
+    waveAnimId = requestAnimationFrame(frame);
+    audioAnalyser.getByteFrequencyData(data);
+    ctx.clearRect(0, 0, W, H);
+    const barW = Math.max(2, (W / binCount) - 1);
+    for (let i = 0; i < binCount; i++) {
+      const ratio = data[i] / 255;
+      const barH = Math.max(3, ratio * H);
+      const hue = 255 - ratio * 60;
+      ctx.fillStyle = `hsla(${hue}, 75%, 65%, ${0.4 + ratio * 0.6})`;
+      ctx.fillRect(i * (barW + 1), H - barH, barW, barH);
+    }
+  }
+  frame();
+}
+
+function drawIdleWave() {
+  const canvas = document.getElementById('waveformCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  const barW = 5, gap = 3, total = barW + gap;
+  const count = Math.floor(W / total);
+  for (let i = 0; i < count; i++) {
+    const h = 3 + Math.abs(Math.sin(i * 0.45)) * 8;
+    ctx.fillStyle = 'rgba(108,99,255,0.25)';
+    ctx.fillRect(i * total, H - h, barW, h);
+  }
+}
+
+document.getElementById('audioPlayBtn').addEventListener('click', toggleAudioPlay);
+
+document.getElementById('audioProgressBar').addEventListener('click', (e) => {
+  if (!audioEl || !isFinite(audioEl.duration)) return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  audioEl.currentTime = ((e.clientX - rect.left) / rect.width) * audioEl.duration;
+});
+
+document.getElementById('audioChangeLink').addEventListener('click', () => {
+  clearAudioPlayer();
+});
+
 audioInput.addEventListener('change', (e) => loadAudioFile(e.target.files[0]));
 audioDrop.addEventListener('dragover',  (e) => { e.preventDefault(); audioDrop.classList.add('dragover'); });
 audioDrop.addEventListener('dragleave', ()  => audioDrop.classList.remove('dragover'));
