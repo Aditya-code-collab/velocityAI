@@ -28,7 +28,8 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
 # Ingest the IndiaMART KB into the indiamart_kb collection (default search source)
-.venv/bin/python3 "velocityAI project/sync-pipeline/kb_ingest.py" --subdir "BuyLead & Tender"
+.venv/bin/python3 "velocityAI project/sync-pipeline/kb_ingest.py" --subdir "."        # ingest entire KB (all 970 articles)
+.venv/bin/python3 "velocityAI project/sync-pipeline/kb_ingest.py" --subdir "BuyLead & Tender"  # scope to one folder
 .venv/bin/python3 "velocityAI project/sync-pipeline/kb_ingest.py" --dry-run          # preview
 .venv/bin/python3 "velocityAI project/sync-pipeline/kb_ingest.py" --search "your q"   # smoke test
 
@@ -155,9 +156,10 @@ payload fields:
 ```
 
 KB articles have **no `rules[]`** — the controller reasons over `content`.
-Ingest a folder:  `python3 "velocityAI project/sync-pipeline/kb_ingest.py" --subdir "BuyLead & Tender"`
-(`--dry-run` to preview, `--search "q"` to smoke-test). Only the
-`BuyLead & Tender` subtree (99 articles) is ingested so far.
+Ingest all: `python3 "velocityAI project/sync-pipeline/kb_ingest.py" --subdir "."` (idempotent — safe to re-run).
+Ingest a folder: `python3 "velocityAI project/sync-pipeline/kb_ingest.py" --subdir "BuyLead & Tender"`
+(`--dry-run` to preview, `--search "q"` to smoke-test). All 970 articles across all 54 KB folders are ingested (as of 2026-05-16).
+**Note:** `kb_ingest.py` truncates embed text to 30,000 chars (~7,500 tokens) to stay under the embedding model's 8,192-token limit. One article exceeds this — `Buyer-Supplier Conflict/Buyer supplier Conflict - Others/Chargeback in India.md` (~103K chars) — its embedding is truncated but full content is stored in Qdrant.
 
 ### Collection: `indiamart_sops` (legacy — used only if `SOP_SEARCH_COLLECTION=indiamart_sops`)
 
@@ -357,7 +359,7 @@ SARVAM_API_KEY=<Sarvam AI API key>   # required for POST /api/transcribe-audio
 - The `claude` CLI must be installed and on PATH for the controller to run: `npm i -g @anthropic-ai/claude-code`. If missing, `open_claude.sh` exits immediately (exit 127, "command not found") and jobs sit in `pending` forever — the API/UI keep working, only analysis stalls.
 - `claude --print` reads auth from the system keychain — do **not** use `--bare`.
 - Compliance search source is `SOP_SEARCH_COLLECTION` (default `indiamart_kb`). Set it to `indiamart_sops` in `.env` to restore the original rule-based behaviour — no code change needed.
-- Only the `BuyLead & Tender` KB subtree is ingested. Ingest more before relying on this broadly: `python3 "velocityAI project/sync-pipeline/kb_ingest.py" --subdir "<folder>"`.
+- All 970 KB articles across 54 folders are ingested into `indiamart_kb` (as of 2026-05-16). Re-ingest with `python3 "velocityAI project/sync-pipeline/kb_ingest.py" --subdir "."` — it is idempotent.
 - KB upserts must use small batches (≤8 points) — the Qdrant server rejects large request bodies with HTTP 413.
 - Each `claude --print` run starts with zero context — no memory of previous jobs. All state is in SQLite and Qdrant.
 - `qdrant_helper.py` uses raw `httpx` calls — do not switch to the `qdrant-client` library (v1.18 is incompatible with server v1.9.2).

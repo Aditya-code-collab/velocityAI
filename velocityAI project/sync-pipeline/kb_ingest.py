@@ -124,6 +124,8 @@ def ingest(files: list[dict]):
     points = []
     for i, f in enumerate(files, 1):
         embed_text = f"{f['title']}\n\n{f['content']}"
+        if len(embed_text) > 30000:  # ~7500 tokens — stay under 8192 limit
+            embed_text = embed_text[:30000]
         points.append({
             "id": f["id"],
             "vector": embed(embed_text),
