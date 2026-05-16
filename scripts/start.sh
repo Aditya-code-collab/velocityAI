@@ -2,9 +2,10 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+cd "$PROJECT_DIR"
 
-LOG_DIR="$SCRIPT_DIR/logs"
+LOG_DIR="$PROJECT_DIR/logs"
 mkdir -p "$LOG_DIR"
 
 # --- checks ---
@@ -31,11 +32,11 @@ sleep 2
 
 # --- start claude controller ---
 echo "Starting Claude compliance controller..."
-nohup bash open_claude.sh \
+nohup bash "$SCRIPT_DIR/open_claude.sh" \
   > "$LOG_DIR/claude.log" 2>&1 &
 echo $! > "$LOG_DIR/claude.pid"
 
 echo "Pipeline is up (background)."
 echo "  API:    http://localhost:8001"
 echo "  Logs:   $LOG_DIR/server.log  |  $LOG_DIR/claude.log"
-echo "  Stop:   ./stop_all.sh"
+echo "  Stop:   ./scripts/stop_all.sh"

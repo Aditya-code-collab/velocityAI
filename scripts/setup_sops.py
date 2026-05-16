@@ -6,6 +6,10 @@ The `description` field is what gets embedded for semantic search.
 It concatenates the title, overview, all rules, and representative
 call phrases so the vector captures real-world transcription vocabulary.
 """
+import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from qdrant_helper import ensure_collection, upsert_sop
 
 SOPS = [

@@ -6,7 +6,7 @@ Accepts call transcriptions (text or audio), queues them as jobs, and dispatches
 
 ## Live Deployment & Validated Test Results
 
-The system is **deployed and running**. Start it with `./start.sh` — the UI is available at **http://localhost:8001** (see [Running the pipeline](#running-the-pipeline) below).
+The system is **deployed and running**. Start it with `./scripts/start.sh` — the UI is available at **http://localhost:8001** (see [Running the pipeline](#running-the-pipeline) below).
 
 ### What has been tested
 
@@ -37,7 +37,7 @@ The system is **deployed and running**. Start it with `./start.sh` — the UI is
 
 ```bash
 # 1. Start everything
-./start.sh
+./scripts/start.sh
 
 # 2. Open the UI
 #    http://localhost:8001
@@ -102,7 +102,7 @@ pip install -r requirements.txt
 ### Option A — one command (recommended)
 
 ```bash
-./start.sh
+./scripts/start.sh
 ```
 
 Starts the API server (port 8001) and the Claude controller in the background. Logs are written to `logs/server.log` and `logs/claude.log`.
@@ -126,7 +126,7 @@ source .venv/bin/activate
 
 ```bash
 source .venv/bin/activate
-bash open_claude.sh
+bash scripts/open_claude.sh
 ```
 
 > **Warning:** Run only **one** `open_claude.sh` at a time. Before starting, check for orphaned processes:
@@ -139,7 +139,7 @@ bash open_claude.sh
 ### Stopping everything
 
 ```bash
-./stop_all.sh
+./scripts/stop_all.sh
 ```
 
 Kills uvicorn, `open_claude.sh`, and any running `claude --print` subprocesses.
@@ -296,7 +296,7 @@ pkill -f "claude --print"
 .venv/bin/python3 -c "from database import update_job; update_job('<job_id>', status='pending')"
 
 # Restart controller
-bash open_claude.sh &
+bash scripts/open_claude.sh &
 ```
 
 ---
@@ -339,9 +339,9 @@ POST /api/transcription                        →  SQLite jobs.db (pending)
 
 | File | Role |
 |---|---|
-| `start.sh` | One-command start — spawns API server + controller; logs to `logs/` |
-| `stop_all.sh` | Kill all VelocityAI processes |
-| `open_claude.sh` | Poll loop — spawns `claude --print < skill.md` per job |
+| `scripts/start.sh` | One-command start — spawns API server + controller; logs to `logs/` |
+| `scripts/stop_all.sh` | Kill all VelocityAI processes |
+| `scripts/open_claude.sh` | Poll loop — spawns `claude --print < skill.md` per job |
 | `skill.md` | Single-job agent instructions (claim → embed → analyse → persist → alert → exit) |
 | `main.py` | FastAPI app — all REST endpoints |
 | `static/index.html` | Single-file SPA |

@@ -17,7 +17,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 # Seed Qdrant with IndiaMart SOPs (run once)
-.venv/bin/python3 setup_sops.py
+.venv/bin/python3 scripts/setup_sops.py
 ```
 
 ## Running the app
@@ -25,12 +25,12 @@ pip install -r requirements.txt
 ### Option A — one command (recommended)
 
 ```bash
-./start.sh
+./scripts/start.sh
 ```
 
-`start.sh` handles everything: creates the virtualenv if missing, installs dependencies, and starts both the API server and worker in the same terminal. Logs are prefixed with `[server]` and `[worker]`. Press `Ctrl+C` to stop both.
+`scripts/start.sh` handles everything: creates the virtualenv if missing, installs dependencies, and starts both the API server and worker in the same terminal. Logs are prefixed with `[server]` and `[worker]`. Press `Ctrl+C` to stop both.
 
-> **Note:** `start.sh` does **not** run `setup_sops.py` — complete first-time setup above before using it.
+> **Note:** `scripts/start.sh` does **not** run `scripts/setup_sops.py` — complete first-time setup above before using it.
 
 ### Option B — two terminals (manual)
 
@@ -91,5 +91,5 @@ If you need to reset and re-seed the Qdrant collection:
 
 ```bash
 curl -X DELETE http://34.47.255.166:80/collections/indiamart_sops
-.venv/bin/python3 setup_sops.py
+.venv/bin/python3 scripts/setup_sops.py
 ```

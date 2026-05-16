@@ -12,7 +12,7 @@ Compliance search reads from the **`indiamart_kb`** collection by default (the i
 
 ### Deployment & Validated Test Results (as of 2026-05-16)
 
-The system is deployed and running. Start with `./start.sh`; UI at **http://localhost:8001**.
+The system is deployed and running. Start with `./scripts/start.sh`; UI at **http://localhost:8001**.
 
 | Metric | Value |
 |--------|-------|
@@ -56,7 +56,7 @@ The system is deployed and running. Start with `./start.sh`; UI at **http://loca
 - Live polling (2s interval), score rings, clickable dimension cards with modal score reasons, CSV export, real-time sidebar with filter tabs.
 
 **DevOps / Operational Maturity**
-- `start.sh` / `stop_all.sh` for one-command lifecycle management with log separation.
+- `scripts/start.sh` / `scripts/stop_all.sh` for one-command lifecycle management with log separation.
 - Structured error codes in the controller (`ERROR_CLAIM`, `ERROR_TIMEOUT`, `ERROR_SEARCH`, `ERROR_PERSIST`, `WARNING_QDRANT`) for grep-able log monitoring.
 - Recovery runbooks documented in CLAUDE.md for stuck jobs, Qdrant failures, and orphaned processes.
 
@@ -80,10 +80,10 @@ The system is deployed and running. Start with `./start.sh`; UI at **http://loca
 
 ```bash
 # Start everything in the background (recommended)
-./start.sh          # spawns uvicorn + claude controller; logs → logs/server.log, logs/claude.log
+./scripts/start.sh  # spawns uvicorn + claude controller; logs → logs/server.log, logs/claude.log
 
 # Stop everything
-./stop_all.sh       # kills uvicorn, open_claude.sh, and any claude --print processes
+./scripts/stop_all.sh  # kills uvicorn, open_claude.sh, and any claude --print processes
 
 # --- or manually ---
 
@@ -100,13 +100,13 @@ pip install -r requirements.txt
 .venv/bin/python3 "velocityAI project/sync-pipeline/kb_ingest.py" --search "your q"   # smoke test
 
 # (Legacy) seed the 5-SOP indiamart_sops collection — only if SOP_SEARCH_COLLECTION=indiamart_sops
-.venv/bin/python3 setup_sops.py
+.venv/bin/python3 scripts/setup_sops.py
 
 # Start API server (port 8001) — UI served at http://localhost:8001
 .venv/bin/uvicorn main:app --host 0.0.0.0 --port 8001 --reload
 
 # Start claude controller (separate terminal)
-bash open_claude.sh
+bash scripts/open_claude.sh
 
 # Smoke test — text transcription
 curl -X POST http://localhost:8001/api/transcription \
@@ -228,7 +228,7 @@ DELETE /api/reports/{job_id}  → remove all analyses for a job                 
   ```bash
   pkill -f "claude --print"
   python3 -c "from database import update_job; update_job('<job_id>', status='pending')"
-  bash open_claude.sh &  # restart controller
+  bash scripts/open_claude.sh &  # restart controller
   ```
 - **Full queue backup:** Check for high-volume submissions; may need to increase batch size or add concurrency (carefully — currently single-threaded by design)
 - **Qdrant write failures:** Non-fatal, but reports won't appear in `/api/reports` until manually re-run. Monitor `WARNING_QDRANT` frequency; if >1%, check Qdrant health and networking
@@ -382,16 +382,16 @@ To add a new field to the report, update `skill.md` (add the field to the JSON s
 | File | Role |
 |------|------|
 | `README.md` | User-facing setup guide — prerequisites, first-time setup, run commands, API reference, troubleshooting |
-| `start.sh` | One-command background start — nohup uvicorn + claude controller; logs to `logs/` |
-| `stop_all.sh` | Kill uvicorn, open_claude.sh, and claude --print processes |
-| `open_claude.sh` | Poll loop: spawns a fresh `claude --print < skill.md` per job |
+| `scripts/start.sh` | One-command background start — nohup uvicorn + claude controller; logs to `logs/` |
+| `scripts/stop_all.sh` | Kill uvicorn, open_claude.sh, and claude --print processes |
+| `scripts/open_claude.sh` | Poll loop: spawns a fresh `claude --print < skill.md` per job |
 | `skill.md` | Single-job agent instructions — claim → embed → analyse → persist → alert → exit |
 | `main.py` | FastAPI app — all REST endpoints |
 | `static/index.html` | Single-file SPA — submit form, live polling, report renderer, filters |
 | `qdrant_helper.py` | Raw `httpx` REST calls to Qdrant + OpenAI embeddings via LiteLLM proxy |
 | `database.py` | SQLite helpers — `init_db`, `create_job`, `claim_next_pending`, `update_job`, `get_job`, `get_job_by_caller_id`, `list_jobs` |
 | `email_helper.py` | CLI-callable SMTP sender: `python3 email_helper.py --to --subject --body` |
-| `setup_sops.py` | One-time seed — upserts 5 IndiaMart SOPs into legacy `indiamart_sops` |
+| `scripts/setup_sops.py` | One-time seed — upserts 5 IndiaMart SOPs into legacy `indiamart_sops` |
 | `config.py` | All env-var config via `python-dotenv`; exposes `PROJECT_DIR`, `SOP_SEARCH_COLLECTION` |
 | `velocityAI project/sync-pipeline/kb_ingest.py` | Ingests `IndiaMART-KB/<subdir>` markdown into the `indiamart_kb` collection (1 article = 1 point; idempotent) |
 
@@ -498,7 +498,7 @@ SARVAM_API_KEY=<Sarvam AI API key>   # required for POST /api/transcribe-audio
 - Email requires a Gmail **App Password**: Google Account → Security → 2-Step Verification → App passwords.
 - Same `caller_id` across submissions → same `job_id` reused; each new analysis appends to the report array in SQLite and creates a new Qdrant point.
 - The sidebar reads from Qdrant (`/api/reports`) so reports are visible on all machines. Locally-submitted pending jobs appear via the in-memory `pendingJobs` map until processing completes.
-- A stale `claude --print` process (from a previous controller run) will compete for jobs — always run `./stop_all.sh` before starting a new controller.
+- A stale `claude --print` process (from a previous controller run) will compete for jobs — always run `./scripts/stop_all.sh` before starting a new controller.
 - `POST /api/transcribe-audio` calls Sarvam AI synchronously before queuing the job — if the audio is very long (>30 min) or the Sarvam API is slow, the HTTP request will block. For very long recordings use Sarvam's Batch API instead (not yet wired up).
 - Sarvam AI `language_code=unknown` enables automatic language detection — fine for mixed Hindi/English calls. Pass `hi-IN` or `en-IN` explicitly if the language is known.
 - **Analysis timeout:** Expected max 5 minutes per job for typical ~500-line transcripts. Embedding/search is capped at 30s; full analysis (extraction + scoring + report generation) at 5 min. Very long transcripts (>1000 lines) may exceed this — consider chunking in future versions.
