@@ -291,15 +291,20 @@ def list_stored_reports(
     caller_id: str | None = None,
     caller_name: str | None = None,
     agent_name: str | None = None,
+    sop_outdated: bool | None = None,
 ):
     """Return stored compliance reports from Qdrant.
 
     Filter by caller_id, caller_name, agent_name (all partial/exact matches, AND).
+    Pass sop_outdated=true to return only records where KB match score was < 0.60.
     Without filters returns all reports paginated newest-first.
     """
     try:
-        if caller_id or caller_name or agent_name:
-            records = get_reports_by_filter(caller_id=caller_id, caller_name=caller_name, agent_name=agent_name)
+        if caller_id or caller_name or agent_name or sop_outdated is not None:
+            records = get_reports_by_filter(
+                caller_id=caller_id, caller_name=caller_name,
+                agent_name=agent_name, sop_outdated=sop_outdated,
+            )
             return {"reports": records, "next_offset": None, "total": len(records)}
         records, next_offset = list_reports(limit=limit, offset=offset)
     except Exception as e:

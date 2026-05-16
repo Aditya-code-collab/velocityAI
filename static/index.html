@@ -652,6 +652,125 @@
     align-items: center; justify-content: center;
     padding: 60px 0; gap: 14px; color: var(--muted);
   }
+
+  /* ── Outdated SOPs page ── */
+  .outdated-stats strong { color: #f59e0b; }
+  .outdated-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
+    gap: 18px;
+  }
+  .outdated-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .outdated-card:hover {
+    border-color: rgba(245,158,11,0.5);
+    box-shadow: 0 4px 24px rgba(245,158,11,0.08);
+  }
+  .outdated-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .outdated-cat-pill {
+    background: rgba(245,158,11,0.12);
+    color: #f59e0b;
+    border: 1px solid rgba(245,158,11,0.3);
+    border-radius: 20px;
+    padding: 4px 13px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .outdated-time {
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .outdated-people {
+    display: flex;
+    gap: 28px;
+  }
+  .outdated-person {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .outdated-person-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--muted);
+  }
+  .outdated-person-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .outdated-score-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+    padding-top: 2px;
+  }
+  .outdated-score-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .outdated-score-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    text-align: center;
+  }
+  .outdated-divider {
+    width: 1px;
+    align-self: stretch;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+  .outdated-reason-box {
+    flex: 1;
+    min-width: 0;
+  }
+  .outdated-reason-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #f59e0b;
+    margin-bottom: 7px;
+  }
+  .outdated-reason-text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+    max-height: 120px;
+    overflow-y: auto;
+  }
+  .outdated-reason-text::-webkit-scrollbar { width: 4px; }
+  .outdated-reason-text::-webkit-scrollbar-track { background: transparent; }
+  .outdated-reason-text::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 </style>
 </head>
 <body>
@@ -664,6 +783,7 @@
     <button class="nav-btn active" onclick="showPage('analyze')">Analyze</button>
     <button class="nav-btn" onclick="showPage('agents')">Agent Leaderboard</button>
     <button class="nav-btn" onclick="showPage('flagged')">Flagged Calls</button>
+    <button class="nav-btn" onclick="showPage('outdated')">Outdated SOPs</button>
   </nav>
 </header>
 
@@ -798,6 +918,21 @@
   </div>
 </div>
 
+<!-- ═══ PAGE 4: Outdated SOPs ═══ -->
+<div class="page" id="page-outdated">
+  <div class="flagged-page">
+    <div class="flagged-toolbar">
+      <h2>Outdated SOPs</h2>
+      <input class="flagged-search" id="outdatedSearch" type="text" placeholder="Search caller, agent, category…" oninput="filterOutdatedTable()" />
+      <button class="btn-flagged btn-export" onclick="exportOutdatedCSV()">Export CSV</button>
+    </div>
+    <div class="flagged-stats outdated-stats" id="outdatedStats"></div>
+    <div id="outdatedTableArea">
+      <div class="flagged-empty"><div class="icon">📋</div><p>Loading outdated SOP records…</p></div>
+    </div>
+  </div>
+</div>
+
 <!-- Agent Detail Modal -->
 <div class="agent-modal-overlay" id="agentModal">
   <div class="agent-modal">
@@ -892,6 +1027,7 @@ function showPage(page) {
   event.target.classList.add('active');
   if (page === 'agents') loadLeaderboard();
   if (page === 'flagged') loadFlaggedCalls();
+  if (page === 'outdated') loadOutdatedSOPs();
 }
 
 // ── Input mode (text / audio) ──
@@ -1866,6 +2002,161 @@ async function sendFlaggedEmail() {
     btn.disabled = false;
     btn.textContent = 'Send Email';
   }
+}
+
+// ── Outdated SOPs page ──
+let cachedOutdatedRecords = [];
+let filteredOutdatedRecords = [];
+
+async function loadOutdatedSOPs() {
+  const area = document.getElementById('outdatedTableArea');
+  const stats = document.getElementById('outdatedStats');
+  area.innerHTML = `<div class="flagged-spinner"><div class="spinner"></div><p>Loading outdated SOP records…</p></div>`;
+  stats.textContent = '';
+  try {
+    const r = await fetch(`${API}/api/reports?sop_outdated=true`);
+    if (!r.ok) throw new Error('Failed to fetch reports');
+    const data = await r.json();
+    cachedOutdatedRecords = data.reports || [];
+    filteredOutdatedRecords = [...cachedOutdatedRecords];
+    document.getElementById('outdatedSearch').value = '';
+    renderOutdatedCards(cachedOutdatedRecords);
+  } catch (err) {
+    area.innerHTML = `<div class="flagged-empty"><div class="icon">⚠️</div><p>Error loading data: ${err.message}</p></div>`;
+    stats.textContent = '';
+  }
+}
+
+function filterOutdatedTable() {
+  const q = (document.getElementById('outdatedSearch').value || '').trim().toLowerCase();
+  if (!q) {
+    filteredOutdatedRecords = cachedOutdatedRecords;
+  } else {
+    filteredOutdatedRecords = cachedOutdatedRecords.filter(r =>
+      (r.caller_name  || '').toLowerCase().includes(q) ||
+      (r.caller_id    || '').toLowerCase().includes(q) ||
+      (r.agent_name   || '').toLowerCase().includes(q) ||
+      (r.agent_id     || '').toLowerCase().includes(q) ||
+      (r.category     || '').toLowerCase().includes(q)
+    );
+  }
+  renderOutdatedCards(filteredOutdatedRecords);
+}
+
+function outdatedScoreRing(score) {
+  if (score === undefined || score === null) {
+    return `<svg width="64" height="64" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="26" fill="none" stroke="var(--border)" stroke-width="5"/>
+      <text x="32" y="37" text-anchor="middle" font-size="12" fill="var(--muted)">N/A</text>
+    </svg>`;
+  }
+  const pct = Math.max(0, Math.min(100, score));
+  const color = scoreColor(pct);
+  const r = 26, circ = 2 * Math.PI * r;
+  const offset = circ * (1 - pct / 100);
+  return `<svg width="64" height="64" viewBox="0 0 64 64">
+    <circle cx="32" cy="32" r="${r}" fill="none" stroke="var(--border)" stroke-width="5"/>
+    <circle cx="32" cy="32" r="${r}" fill="none" stroke="${color}" stroke-width="5"
+      stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}"
+      stroke-linecap="round" transform="rotate(-90 32 32)"/>
+    <text x="32" y="37" text-anchor="middle" font-size="14" font-weight="700" fill="${color}">${pct}</text>
+  </svg>`;
+}
+
+function renderOutdatedCards(records) {
+  const area = document.getElementById('outdatedTableArea');
+  const stats = document.getElementById('outdatedStats');
+  const total = cachedOutdatedRecords.length;
+  const showing = records.length;
+
+  if (total === 0) {
+    stats.innerHTML = '';
+    area.innerHTML = `<div class="flagged-empty"><div class="icon">✅</div><p>No outdated SOP records — KB coverage looks complete.</p></div>`;
+    return;
+  }
+
+  const cats = new Set(records.map(r => r.category).filter(Boolean));
+  stats.innerHTML = `<strong>${total}</strong> call${total !== 1 ? 's' : ''} with missing KB coverage across <strong>${cats.size}</strong> categor${cats.size !== 1 ? 'ies' : 'y'}${showing < total ? ` &mdash; showing <strong>${showing}</strong>` : ''}`;
+
+  if (records.length === 0) {
+    area.innerHTML = `<div class="flagged-empty"><div class="icon">🔍</div><p>No results match your search.</p></div>`;
+    return;
+  }
+
+  const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const sorted = [...records].sort((a, b) => (a.category || '').localeCompare(b.category || ''));
+
+  const cards = sorted.map(r => {
+    const sopScore = r.scores?.script_compliance;
+    const gapReason = (r.score_reasons || {}).script_compliance || 'No KB match found for this call topic.';
+    return `
+    <div class="outdated-card">
+      <div class="outdated-card-header">
+        <span class="outdated-cat-pill" title="${esc(r.category || '')}">${esc(r.category || 'Unknown Category')}</span>
+        <span class="outdated-time">${timeAgo(r.created_at)}</span>
+      </div>
+      <div class="outdated-people">
+        <div class="outdated-person">
+          <span class="outdated-person-label">Caller</span>
+          <span class="outdated-person-name">${esc(r.caller_name || '—')}</span>
+        </div>
+        <div class="outdated-person">
+          <span class="outdated-person-label">Agent</span>
+          <span class="outdated-person-name">${esc(r.agent_name || '—')}</span>
+        </div>
+      </div>
+      <div class="outdated-score-row">
+        <div class="outdated-score-col">
+          ${outdatedScoreRing(sopScore)}
+          <span class="outdated-score-label">SOP Score</span>
+        </div>
+        <div class="outdated-divider"></div>
+        <div class="outdated-reason-box">
+          <div class="outdated-reason-label">Why this SOP needs improvement</div>
+          <div class="outdated-reason-text">${esc(gapReason)}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  area.innerHTML = `<div class="outdated-grid">${cards}</div>`;
+}
+
+function exportOutdatedCSV() {
+  const records = filteredOutdatedRecords.length > 0 ? filteredOutdatedRecords : cachedOutdatedRecords;
+  if (!records.length) { showToast('No outdated SOP records to export', true); return; }
+
+  const csvVal = v => {
+    const s = (v === null || v === undefined) ? '' : String(v);
+    return '"' + s.replace(/"/g, '""') + '"';
+  };
+
+  const columns = [
+    'Category', 'Caller Name', 'Agent Name',
+    'SOP Score', 'Why SOP Needs Improvement', 'Timestamp',
+  ];
+
+  const lines = [columns.map(csvVal).join(',')];
+  const sorted = [...records].sort((a, b) => (a.category || '').localeCompare(b.category || ''));
+  for (const r of sorted) {
+    const gapReason = (r.score_reasons || {}).script_compliance || 'No KB match found for this call topic.';
+    lines.push([
+      r.category,
+      r.caller_name, r.agent_name,
+      r.scores?.script_compliance,
+      gapReason,
+      r.created_at,
+    ].map(csvVal).join(','));
+  }
+
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `outdated_sops_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`Exported ${records.length} record${records.length !== 1 ? 's' : ''}`);
 }
 
 // ── Boot ──

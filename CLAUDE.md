@@ -66,6 +66,7 @@ curl "http://localhost:8001/api/reports?caller_id=C001"                       # 
 curl "http://localhost:8001/api/reports?caller_name=Amit"                     # filter by caller name (partial)
 curl "http://localhost:8001/api/reports?agent_name=Rahul"                     # filter by agent name (partial)
 curl "http://localhost:8001/api/reports?caller_id=C001&agent_name=Rahul"      # combined filter (AND)
+curl "http://localhost:8001/api/reports?sop_outdated=true"                    # calls where KB top-hit score < 0.60 (server-side Qdrant filter)
 curl http://localhost:8001/api/reports/<job_id>                               # all analyses for a job
 curl -X DELETE http://localhost:8001/api/reports/<job_id>                     # delete all analyses for a job
 
@@ -213,10 +214,11 @@ payload fields:
 Qdrant write failure is non-fatal — the SQLite record is always saved first.
 
 Filtering via `GET /api/reports`:
-- `?caller_id=X` — exact match
-- `?caller_name=X` — partial case-insensitive match
-- `?agent_name=X` — partial case-insensitive match
-- Multiple params → AND filter
+- `?caller_id=X` — exact match (server-side Qdrant filter)
+- `?caller_name=X` — partial case-insensitive match (Python post-filter)
+- `?agent_name=X` — partial case-insensitive match (Python post-filter)
+- `?sop_outdated=true` — calls where KB top-hit cosine similarity was < 0.60 (server-side Qdrant filter; used by the Outdated SOPs page)
+- Multiple params → AND filter; `get_reports_by_filter()` in `qdrant_helper.py` handles all
 
 ### Two-stage matching
 
@@ -231,15 +233,33 @@ Filtering via `GET /api/reports`:
 
 `static/index.html` is a single-file vanilla JS SPA served at `GET /` by FastAPI (`StaticFiles` mount + `FileResponse`). No build step.
 
-**Layout — two-column:**
-- **Left panel:** submit form (file upload drop zone + manual textarea + Agent Name / Agent ID / Caller ID / Caller Name — all required) and a recent-jobs sidebar (last 30 from Qdrant, shared across all machines)
-- **Right panel:** live compliance report — score ring, violations with evidence quotes, summary, recommendation, previous analyses history
+**Four top-level pages (nav bar):**
+
+| Page | ID | Description |
+|------|----|-------------|
+| Analyze | `page-analyze` | Two-column: submit form + sidebar on left, live compliance report on right |
+| Agent Leaderboard | `page-agents` | Per-agent score averages, trend charts, ranked table |
+| Flagged Calls | `page-flagged` | Dense table of all calls where `violations_found=true`; CSV export + email summary |
+| Outdated SOPs | `page-outdated` | Card grid of calls where `sop_outdated=true` (KB top-hit score < 0.60); for KB improvers |
+
+**Analyze page — left panel:**
+- Submit form: file upload drop zone + manual textarea + Agent Name / Agent ID / Caller ID / Caller Name (all required) and a recent-jobs sidebar (last 30 from Qdrant, shared across all machines)
+
+**Analyze page — right panel:**
+- Live compliance report: score ring, violations with evidence quotes, summary, recommendation, previous analyses history
 
 **Sidebar features:**
 - Filter tabs: All / Flagged (violations only, with live count badge)
 - Three filter inputs: Caller ID (exact), Caller Name (partial), Agent Name (partial) — all work together (AND)
 - Clear filters link
 - Shows agent name + caller name per row; compliance score (coloured green/amber/red); red dot for flagged, green for compliant
+
+**Outdated SOPs page:**
+- Fetches via `GET /api/reports?sop_outdated=true` — server-side Qdrant filter, no client-side filtering
+- Cards sorted by category; each card shows: category pill (amber), caller name, agent name, SOP score ring (svg, colour-coded), and the full `score_reasons.script_compliance` text as "Why this SOP needs improvement"
+- SOP score is `scores.script_compliance` — capped at 50 by controller when `sop_outdated=true`
+- Stats bar counts total calls and unique categories affected
+- CSV export: Category, Caller Name, Agent Name, SOP Score, Why SOP Needs Improvement, Timestamp — sorted by category
 
 **Key JS behaviours:**
 - **Input mode tabs:** "📄 Text / File" (default) or "🎙️ Audio" — switches between two drop zones

@@ -134,14 +134,20 @@ def list_reports(limit: int = 20, offset: str | None = None) -> tuple[list[dict]
     return points, next_offset
 
 
-def get_reports_by_filter(caller_id: str | None = None, caller_name: str | None = None, agent_name: str | None = None) -> list[dict]:
+def get_reports_by_filter(caller_id: str | None = None, caller_name: str | None = None, agent_name: str | None = None, sop_outdated: bool | None = None) -> list[dict]:
     """Fetch analyses filtered by caller_id (exact), caller_name and/or agent_name (partial, case-insensitive).
 
+    sop_outdated=True fetches only records where KB match score was < 0.60 (server-side Qdrant filter).
     All filters applied together (AND).
     """
-    body: dict = {"limit": 100, "with_payload": True, "with_vector": False}
+    body: dict = {"limit": 500, "with_payload": True, "with_vector": False}
+    must = []
     if caller_id:
-        body["filter"] = {"must": [{"key": "caller_id", "match": {"value": caller_id}}]}
+        must.append({"key": "caller_id", "match": {"value": caller_id}})
+    if sop_outdated is not None:
+        must.append({"key": "sop_outdated", "match": {"value": sop_outdated}})
+    if must:
+        body["filter"] = {"must": must}
 
     r = _http_client().post(f"/collections/{REPORTS_COLLECTION}/points/scroll", json=body)
     r.raise_for_status()
