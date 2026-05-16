@@ -510,6 +510,16 @@ KNOWLEDGE_ACCURACY:
     "call_outcome": 75,
     "knowledge_accuracy": 85
   },
+  "score_reasons": {
+    "script_compliance": "Agent followed 8/9 script rules fully. Partial deduction (−12) for objection rebuttal: used a cost-comparison approach rather than the KB-prescribed fund-issue rebuttal with exact service breakdowns.",
+    "objection_handling": "One pricing objection raised ('That's quite expensive'). Agent responded with a cost-comparison argument — broadly consistent with KB but not the exact prescribed rebuttal listing specific included services (−25). Partial credit awarded.",
+    "call_checkpoints": "All 7 mandatory checkpoints completed in correct order: greeting, self-introduction, purpose statement, recording disclosure, permission, feedback collection, and professional closing.",
+    "wait_compliance": "Agent paused at all 5 prescribed wait points: after greeting, permission ask, recording disclosure, experience question, and objection response. No violations.",
+    "agent_sentiment": "Highly empathetic tone. Used 'I understand your concern, Sir' and 'I completely understand, Sir'. Addressed customer's irrelevancy pain point before pitching. Used customer's name twice. Positive framing throughout (+22 from baseline 70).",
+    "customer_sentiment": "Started neutral, moved to concerned about lead relevancy, then reassured after the agent explained BuyLead filters and cost comparison. Ended open/considering — not fully committed.",
+    "call_outcome": "Callback successfully scheduled for next Wednesday with customer agreement. Positive intent confirmed but no commitment to renew or upgrade yet.",
+    "knowledge_accuracy": "Agent quoted Rs. 35,000/year for Gold package — could not be verified against KB pricing (−15 for unverified claim). All other product information (priority lead matching, BuyLead filters, Rs. 2,500/month cost comparison) was consistent with KB."
+  },
   "checkpoints": {
     "greeting": true,
     "self_introduction": true,
@@ -522,6 +532,8 @@ KNOWLEDGE_ACCURACY:
   "call_outcome_type": "callback_scheduled",
   "customer_sentiment_trajectory": "neutral → concerned → reassured → open",
   "compliance_score": 87,
+  "human_review_required": false,
+  "sop_outdated": false,
   "compliance_summary": "Agent followed the combined renewal/upsell script effectively. All 7 checkpoints hit. Strong empathy and professional tone throughout. Addressed irrelevancy concern before pitching upsell. Objection handling used a cost-comparison approach consistent with KB but not the exact prescribed rebuttal wording. Customer moved from concern to openness with a callback scheduled.",
   "recommendation": "WHAT WENT WELL:\n- Perfect checkpoint execution — all 7/7 hit in correct order\n- Excellent empathy: \"I understand your concern, Sir. Irrelevant leads can be frustrating\"\n- Smart sequencing: addressed the customer's irrelevancy pain point before introducing the upsell\n\nWHAT TO IMPROVE:\n1. Objection handling: When customer said \"That's quite expensive\", agent used a general cost comparison. The KB article \"Fund Issue (Retention Script - Objection Handling)\" prescribes a more specific rebuttal: compare Rs. 2500/month to shop/factory/office costs of 60-80K/month, then list specific included services (Catalog support, Direct Enquiries, PNS Service, 7 FREE Buy Leads/week). Review: \"Fund Issue (Retention Script - Objection Handling)\"\n2. Pricing verification: Agent quoted Rs. 35,000/year for Gold — ensure this matches current pricing in the system.\n\nPRIORITY ACTION: Memorize the structured fund-issue rebuttal from the KB — it's more persuasive than a general cost comparison and covers specific service benefits the customer may not know about."
 }

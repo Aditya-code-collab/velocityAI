@@ -92,14 +92,21 @@ def get_job_by_caller_id(caller_id: str) -> dict | None:
 def claim_next_pending() -> dict | None:
     """Atomically mark the oldest pending job as processing and return it."""
     conn = get_conn()
-    row = conn.execute(
-        "SELECT * FROM jobs WHERE status='pending' ORDER BY created_at LIMIT 1"
-    ).fetchone()
-    if row:
-        conn.execute(
-            "UPDATE jobs SET status='processing', updated_at=? WHERE id=?",
-            (datetime.utcnow().isoformat(), row["id"]),
-        )
-        conn.commit()
-    conn.close()
+    conn.isolation_level = None  # autocommit off; we manage the transaction
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute(
+            "SELECT * FROM jobs WHERE status='pending' ORDER BY created_at LIMIT 1"
+        ).fetchone()
+        if row:
+            conn.execute(
+                "UPDATE jobs SET status='processing', updated_at=? WHERE id=?",
+                (datetime.utcnow().isoformat(), row["id"]),
+            )
+        conn.execute("COMMIT")
+    except Exception:
+        conn.execute("ROLLBACK")
+        raise
+    finally:
+        conn.close()
     return dict(row) if row else None
