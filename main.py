@@ -19,7 +19,6 @@ from pydantic import BaseModel
 from config import SARVAM_API_KEY, VIOLATION_EMAIL_TO
 from database import create_job, get_job, get_job_by_caller_id, init_db, list_jobs, update_job
 from email_helper import send_email
-from qdrant_helper import delete_report, get_report, get_reports_by_filter, list_reports, get_agent_scores, get_all_agents_summary
 from qdrant_helper import delete_report, get_report, get_reports_by_filter, list_reports, get_agent_scores, get_all_agents_summary, get_agent_trends
 
 app = FastAPI(
