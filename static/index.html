@@ -389,21 +389,64 @@
   .reason-overlay.open { display: flex; }
   .reason-modal {
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: 14px; padding: 24px 28px;
-    max-width: 460px; width: 90%; position: relative;
-    box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+    border-radius: 16px; padding: 0;
+    max-width: 520px; width: 92%; position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+    max-height: 90vh; display: flex; flex-direction: column;
+    overflow: hidden;
   }
   .reason-modal-close {
     position: absolute; top: 14px; right: 16px;
     background: none; border: none; color: var(--muted);
-    font-size: 18px; cursor: pointer; line-height: 1;
+    font-size: 18px; cursor: pointer; line-height: 1; z-index: 1;
   }
   .reason-modal-close:hover { color: var(--text); }
-  .reason-modal-dim { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); margin-bottom: 6px; }
-  .reason-modal-score { font-size: 40px; font-weight: 800; line-height: 1; margin-bottom: 12px; }
-  .reason-modal-bar { height: 6px; border-radius: 3px; background: var(--border); margin-bottom: 18px; overflow: hidden; }
-  .reason-modal-bar-fill { height: 100%; border-radius: 3px; }
-  .reason-modal-body { font-size: 14px; line-height: 1.65; color: var(--text); }
+
+  /* Header band */
+  .rm-header {
+    padding: 22px 28px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .reason-modal-dim { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 4px; }
+  .rm-score-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+  .reason-modal-score { font-size: 42px; font-weight: 800; line-height: 1; }
+  .rm-score-label { font-size: 13px; color: var(--muted); }
+  .reason-modal-bar { height: 7px; border-radius: 4px; background: var(--border); overflow: hidden; }
+  .reason-modal-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+
+  /* Summary chips row */
+  .rm-chips { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 28px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .rm-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700;
+  }
+  .rm-chip.deduct { background: rgba(239,68,68,0.12); color: #ef4444; }
+  .rm-chip.bonus  { background: rgba(34,197,94,0.12);  color: #22c55e; }
+
+  /* Scrollable body */
+  .reason-modal-body {
+    overflow-y: auto; padding: 16px 28px 22px;
+    flex: 1;
+  }
+  .rm-items { display: flex; flex-direction: column; gap: 10px; }
+  .rm-item {
+    display: flex; gap: 10px; align-items: flex-start;
+    font-size: 13.5px; line-height: 1.6; color: var(--text);
+  }
+  .rm-item-icon { flex-shrink: 0; width: 20px; text-align: center; margin-top: 2px; font-size: 13px; }
+  .rm-item.positive .rm-item-icon { color: #22c55e; }
+  .rm-item.negative .rm-item-icon { color: #ef4444; }
+  .rm-item.neutral  .rm-item-icon { color: var(--muted); }
+  .rm-item-text { flex: 1; }
+  .rm-item-text .rm-badge {
+    display: inline-flex; align-items: center;
+    padding: 1px 7px; border-radius: 12px; font-size: 11px; font-weight: 700;
+    margin-left: 4px; vertical-align: middle;
+  }
+  .rm-badge.deduct { background: rgba(239,68,68,0.15); color: #ef4444; }
+  .rm-badge.bonus  { background: rgba(34,197,94,0.15);  color: #22c55e; }
+  .rm-badge.neutral { background: rgba(156,163,175,0.15); color: #9ca3af; }
 
   /* ── Checkpoints ── */
   .checkpoints-grid {
@@ -1115,10 +1158,18 @@
 <div class="reason-overlay" id="reasonOverlay" onclick="closeReasonModal(event)">
   <div class="reason-modal" id="reasonModal">
     <button class="reason-modal-close" onclick="closeReasonModal(null)">✕</button>
-    <div class="reason-modal-dim" id="rmDim"></div>
-    <div class="reason-modal-score" id="rmScore"></div>
-    <div class="reason-modal-bar"><div class="reason-modal-bar-fill" id="rmBar"></div></div>
-    <div class="reason-modal-body" id="rmBody"></div>
+    <div class="rm-header">
+      <div class="reason-modal-dim" id="rmDim"></div>
+      <div class="rm-score-row">
+        <div class="reason-modal-score" id="rmScore"></div>
+        <div class="rm-score-label">/ 100</div>
+      </div>
+      <div class="reason-modal-bar"><div class="reason-modal-bar-fill" id="rmBar"></div></div>
+    </div>
+    <div class="rm-chips" id="rmChips"></div>
+    <div class="reason-modal-body">
+      <div class="rm-items" id="rmBody"></div>
+    </div>
   </div>
 </div>
 
@@ -1167,16 +1218,85 @@ function scoreColor(s) {
   return '#ef4444';
 }
 
+function parseReasonIntoItems(text) {
+  // Split on sentence boundaries (". " or newlines), keep non-empty
+  const sentences = text
+    .split(/(?<=\.)\s+|\n+/)
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  // Regex to detect deduction/bonus tokens like (−10), (-15 each), (+5), (−14 each)
+  const tokenRe = /\(([\+\-−]+\s*\d+(?:\s+each)?)\)/g;
+
+  return sentences.map(sentence => {
+    const deductions = [];
+    const bonuses = [];
+    let m;
+    while ((m = tokenRe.exec(sentence)) !== null) {
+      const raw = m[1].replace('−', '-');
+      if (raw.startsWith('+')) bonuses.push(m[1]);
+      else deductions.push(m[1]);
+    }
+    tokenRe.lastIndex = 0; // reset
+
+    const hasDeduct = deductions.length > 0;
+    const hasBonus  = bonuses.length > 0;
+    const type = hasDeduct ? 'negative' : hasBonus ? 'positive' : 'neutral';
+    const icon = hasDeduct ? '▼' : hasBonus ? '▲' : '•';
+
+    // Annotate tokens inline with badges
+    const html = sentence.replace(tokenRe, (match, tok) => {
+      const cls = tok.replace('−', '-').startsWith('+') ? 'bonus' : 'deduct';
+      return `<span class="rm-badge ${cls}">${match}</span>`;
+    });
+
+    return { type, icon, html, deductions, bonuses };
+  });
+}
+
 function openReasonModal(dimKey, score) {
   const label = DIM_LABELS[dimKey] || dimKey;
   const color = typeof score === 'number' ? scoreColor(score) : 'var(--muted)';
+
   document.getElementById('rmDim').textContent = label;
-  document.getElementById('rmScore').textContent = typeof score === 'number' ? score + ' / 100' : '—';
-  document.getElementById('rmScore').style.color = color;
+  const scoreEl = document.getElementById('rmScore');
+  scoreEl.textContent = typeof score === 'number' ? score : '—';
+  scoreEl.style.color = color;
+
   const bar = document.getElementById('rmBar');
   bar.style.width = (typeof score === 'number' ? score : 0) + '%';
   bar.style.background = color;
-  document.getElementById('rmBody').textContent = currentScoreReasons[dimKey] || 'No reason recorded for this score.';
+
+  const rawText = currentScoreReasons[dimKey] || '';
+  const items = rawText ? parseReasonIntoItems(rawText) : [];
+
+  // Build summary chips (aggregate all deductions + bonuses)
+  const allDeduct = items.flatMap(i => i.deductions);
+  const allBonus  = items.flatMap(i => i.bonuses);
+  const chipsEl = document.getElementById('rmChips');
+  if (allDeduct.length === 0 && allBonus.length === 0) {
+    chipsEl.style.display = 'none';
+  } else {
+    chipsEl.style.display = 'flex';
+    chipsEl.innerHTML = [
+      ...allDeduct.map(d => `<span class="rm-chip deduct">▼ ${d}</span>`),
+      ...allBonus.map(b => `<span class="rm-chip bonus">▲ ${b}</span>`),
+    ].join('');
+  }
+
+  // Build body items
+  const bodyEl = document.getElementById('rmBody');
+  if (!rawText) {
+    bodyEl.innerHTML = '<div class="rm-item neutral"><span class="rm-item-icon">•</span><span class="rm-item-text" style="color:var(--muted)">No reason recorded for this score.</span></div>';
+  } else {
+    bodyEl.innerHTML = items.map(({ type, icon, html }) =>
+      `<div class="rm-item ${type}">
+        <span class="rm-item-icon">${icon}</span>
+        <span class="rm-item-text">${html}</span>
+      </div>`
+    ).join('');
+  }
+
   document.getElementById('reasonOverlay').classList.add('open');
 }
 
